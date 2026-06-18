@@ -24,6 +24,8 @@ export function registerIpc(windows: WindowManager, controller: PetController): 
   ipcMain.handle(IPC.configSet, (_e, patch: Partial<AppConfig>) => {
     const updated = getConfigStore().set(patch)
     applyStartupSetting(updated)
+    // Switching character pack takes effect immediately by reloading the pet.
+    if (patch.character) windows.reloadPet()
     return updated
   })
 

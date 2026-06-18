@@ -7,6 +7,7 @@ const els = {
   baseUrl: $<HTMLInputElement>('baseUrl'),
   apiKey: $<HTMLInputElement>('apiKey'),
   model: $<HTMLInputElement>('model'),
+  character: $<HTMLSelectElement>('character'),
   persona: $<HTMLTextAreaElement>('persona'),
   followCursor: $<HTMLInputElement>('followCursor'),
   useEnvironmentContext: $<HTMLInputElement>('useEnvironmentContext'),
@@ -46,6 +47,7 @@ async function init(): Promise<void> {
 
   els.provider.value = config.provider
   loadProviderFields(config.provider)
+  els.character.value = config.character
   els.persona.value = config.persona
   els.followCursor.checked = config.behaviour.followCursor
   els.useEnvironmentContext.checked = config.behaviour.useEnvironmentContext
@@ -78,6 +80,7 @@ async function save(): Promise<void> {
   const patch: Partial<AppConfig> = {
     provider: selected,
     providers: config.providers,
+    character: els.character.value,
     persona: els.persona.value,
     behaviour: {
       followCursor: els.followCursor.checked,

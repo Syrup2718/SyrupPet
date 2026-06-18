@@ -54,6 +54,11 @@ export class WindowManager {
     return win
   }
 
+  /** Reload the pet renderer (e.g. after the character pack changed). */
+  reloadPet(): void {
+    if (this.pet && !this.pet.isDestroyed()) this.pet.webContents.reload()
+  }
+
   togglePet(): void {
     if (!this.pet) {
       this.createPet()
