@@ -9,17 +9,26 @@ import { TrayService } from './services/tray/trayService'
 import { getConfigStore } from './config/configStore'
 import { registerIpc, applyStartupSetting } from './ipc/registerIpc'
 
-// Single-instance: a second launch just re-shows the pet instead of duplicating.
-if (!app.requestSingleInstanceLock()) {
-  app.quit()
-}
-
 let windows: WindowManager
 let controller: PetController
 let hotkeys: HotkeyService
-const tray = new TrayService()
+let tray: TrayService
 
-app.whenReady().then(() => {
+// Single-instance guard. If another instance already holds the lock we must
+// quit *without* running any setup — otherwise this second process would try to
+// register the same global hotkeys (failing) and lock the same cache dir,
+// producing confusing "already in use" / cache-access-denied errors.
+const gotTheLock = app.requestSingleInstanceLock()
+if (!gotTheLock) {
+  app.quit()
+} else {
+  bootstrap()
+}
+
+function bootstrap(): void {
+  tray = new TrayService()
+
+  app.whenReady().then(() => {
   const config = getConfigStore().get()
 
   windows = new WindowManager(WindowManager.defaultPreloadPath())
@@ -51,19 +60,20 @@ app.whenReady().then(() => {
 
   app.on('second-instance', () => windows.togglePet())
 
-  // On macOS-style reactivation (harmless on Windows): ensure a pet exists.
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) windows.createPet()
+    // On macOS-style reactivation (harmless on Windows): ensure a pet exists.
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) windows.createPet()
+    })
   })
-})
 
-// The pet is a tray app — keep running when all windows are closed/hidden.
-app.on('window-all-closed', () => {
-  // intentionally do nothing on Windows; quitting happens via the tray menu.
-})
+  // The pet is a tray app — keep running when all windows are closed/hidden.
+  app.on('window-all-closed', () => {
+    // intentionally do nothing on Windows; quitting happens via the tray menu.
+  })
 
-app.on('will-quit', () => {
-  hotkeys?.unregister()
-  controller?.dispose()
-  tray.destroy()
-})
+  app.on('will-quit', () => {
+    hotkeys?.unregister()
+    controller?.dispose()
+    tray?.destroy()
+  })
+}
