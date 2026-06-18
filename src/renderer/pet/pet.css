@@ -27,7 +27,7 @@ body {
 #character {
   position: relative;
   width: 200px;
-  height: 220px;
+  height: 300px;
   cursor: grab;
   transform-origin: 50% 100%;
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
@@ -176,7 +176,7 @@ body {
 /* ---------------------------------------------------------------- bubble */
 #bubble {
   position: absolute;
-  bottom: 215px;
+  bottom: 295px;
   left: 50%;
   transform: translateX(-50%) scale(1);
   max-width: 240px;

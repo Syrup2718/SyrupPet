@@ -17,6 +17,10 @@ Thumbs.db
 !.vscode/extensions.json
 .idea/
 
+# stray character image dropped at repo root for transfer
+# (the real asset lives in src/renderer/public/characters/<pack>/)
+/character.png
+
 # local env / secrets
 .env
 .env.local

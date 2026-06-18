@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { loadRenderer } from './loadRenderer'
 
 const PET_WIDTH = 280
-const PET_HEIGHT = 320
+const PET_HEIGHT = 440
 
 /**
  * Owns the three windows and the pet-specific window behaviours that can only
