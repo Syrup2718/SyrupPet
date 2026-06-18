@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline';" />
+    <title>小漿糖 — 設定</title>
+    <link rel="stylesheet" href="./settings.css" />
+  </head>
+  <body>
+    <div id="card">
+      <header id="titlebar">
+        <span class="title">⚙️ 小漿糖 設定</span>
+        <button id="close-btn" title="關閉">✕</button>
+      </header>
+
+      <main id="form">
+        <section>
+          <h2>🧠 LLM 模型</h2>
+          <label>提供者 (Provider)
+            <select id="provider">
+              <option value="deepseek">DeepSeek</option>
+              <option value="openai">OpenAI</option>
+              <option value="ollama">Ollama (本地)</option>
+              <option value="custom">自訂 (OpenAI 相容)</option>
+            </select>
+          </label>
+          <label>API 位址 (Base URL)
+            <input id="baseUrl" type="text" spellcheck="false" />
+          </label>
+          <label>API Key
+            <input id="apiKey" type="password" spellcheck="false" placeholder="sk-…（本地模型可留空）" />
+          </label>
+          <label>模型 (Model)
+            <input id="model" type="text" spellcheck="false" />
+          </label>
+        </section>
+
+        <section>
+          <h2>🍮 個性 (Persona)</h2>
+          <textarea id="persona" rows="4"></textarea>
+        </section>
+
+        <section>
+          <h2>👀 行為</h2>
+          <label class="row"><input id="followCursor" type="checkbox" /> 眼睛/表情跟著滑鼠反應</label>
+          <label class="row"><input id="useEnvironmentContext" type="checkbox" /> 聊天時參考目前視窗/閒置狀態</label>
+          <label class="row"><input id="launchOnStartup" type="checkbox" /> 開機時自動啟動</label>
+          <label>好奇反應距離 (px): <span id="proximityVal"></span>
+            <input id="proximityRadius" type="range" min="60" max="400" step="10" />
+          </label>
+        </section>
+
+        <section>
+          <h2>⌨️ 快捷鍵</h2>
+          <label>叫出聊天框 <input id="hk-chat" type="text" spellcheck="false" /></label>
+          <label>分析剪貼簿 <input id="hk-clip" type="text" spellcheck="false" /></label>
+          <label>顯示/隱藏桌寵 <input id="hk-pet" type="text" spellcheck="false" /></label>
+          <p class="hint">格式範例:CommandOrControl+Shift+Space。改完按儲存後需重新啟動才會套用快捷鍵。</p>
+        </section>
+      </main>
+
+      <footer>
+        <span id="status"></span>
+        <button id="save-btn">儲存</button>
+      </footer>
+    </div>
+    <script type="module" src="./settings.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,25 @@
+# dependencies
+node_modules/
+
+# build output
+out/
+dist/
+*.tsbuildinfo
+
+# logs
+*.log
+npm-debug.log*
+
+# editor / OS
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# local env / secrets
+.env
+.env.local
+
+# Claude Code local settings (per-machine permissions; not shared)
+.claude/settings.local.json

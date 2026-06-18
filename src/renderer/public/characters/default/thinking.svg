@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 220" width="200" height="220">
+  <defs>
+    <radialGradient id="body" cx="50%" cy="35%" r="75%">
+      <stop offset="0%" stop-color="#F6C682"/>
+      <stop offset="100%" stop-color="#E59B42"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="100" cy="205" rx="62" ry="12" fill="#000" opacity="0.12"/>
+  <path d="M100 40 C150 40 168 95 168 140 C168 185 140 205 100 205 C60 205 32 185 32 140 C32 95 50 40 100 40 Z" fill="url(#body)" stroke="#B5722B" stroke-width="3"/>
+  <circle cx="74" cy="78" r="6" fill="#fff" opacity="0.5"/>
+  <!-- eyes looking up -->
+  <circle cx="78" cy="125" r="16" fill="#fff" stroke="#B5722B" stroke-width="2"/>
+  <circle cx="122" cy="125" r="16" fill="#fff" stroke="#B5722B" stroke-width="2"/>
+  <circle class="pupil" cx="80" cy="117" r="7" fill="#3a2a1a"/>
+  <circle class="pupil" cx="124" cy="117" r="7" fill="#3a2a1a"/>
+  <path d="M90 156 L110 156" stroke="#3a2a1a" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="150" cy="72" r="5" fill="#fff" stroke="#B5722B" stroke-width="1.5"/>
+  <circle cx="162" cy="56" r="7" fill="#fff" stroke="#B5722B" stroke-width="1.5"/>
+  <circle cx="176" cy="38" r="9" fill="#fff" stroke="#B5722B" stroke-width="1.5"/>
+</svg>

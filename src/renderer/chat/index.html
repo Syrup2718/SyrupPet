@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline';" />
+    <title>小漿糖 — Chat</title>
+    <link rel="stylesheet" href="./chat.css" />
+  </head>
+  <body>
+    <div id="card">
+      <header id="titlebar">
+        <span class="title">🍮 小漿糖</span>
+        <div class="actions">
+          <button id="clipboard-btn" title="分析剪貼簿 (主動觸發)">📋</button>
+          <button id="settings-hint" title="設定請從系統托盤開啟" disabled>⚙️</button>
+          <button id="close-btn" title="關閉">✕</button>
+        </div>
+      </header>
+
+      <main id="messages"></main>
+
+      <div id="typing" class="hidden"><span></span><span></span><span></span></div>
+
+      <footer id="composer">
+        <textarea id="input" rows="1" placeholder="跟小漿糖說點什麼… (Enter 送出 / Shift+Enter 換行)"></textarea>
+        <button id="send-btn">送出</button>
+      </footer>
+    </div>
+    <script type="module" src="./chat.ts"></script>
+  </body>
+</html>

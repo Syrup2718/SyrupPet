@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 220" width="200" height="220">
+  <defs>
+    <radialGradient id="body" cx="50%" cy="35%" r="75%">
+      <stop offset="0%" stop-color="#EFC07E"/>
+      <stop offset="100%" stop-color="#DC9440"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="100" cy="205" rx="62" ry="12" fill="#000" opacity="0.12"/>
+  <path d="M100 46 C150 46 168 98 168 142 C168 185 140 205 100 205 C60 205 32 185 32 142 C32 98 50 46 100 46 Z" fill="url(#body)" stroke="#B5722B" stroke-width="3"/>
+  <!-- sleepy closed eyes -->
+  <path d="M64 126 Q78 134 92 126" fill="none" stroke="#3a2a1a" stroke-width="4" stroke-linecap="round"/>
+  <path d="M108 126 Q122 134 136 126" fill="none" stroke="#3a2a1a" stroke-width="4" stroke-linecap="round"/>
+  <ellipse cx="62" cy="150" rx="9" ry="6" fill="#F4A6A6" opacity="0.5"/>
+  <ellipse cx="138" cy="150" rx="9" ry="6" fill="#F4A6A6" opacity="0.5"/>
+  <ellipse cx="100" cy="160" rx="7" ry="10" fill="#3a2a1a" opacity="0.7"/>
+  <text x="138" y="74" font-family="Arial" font-size="22" font-weight="bold" fill="#9a6a30">z</text>
+  <text x="156" y="54" font-family="Arial" font-size="30" font-weight="bold" fill="#9a6a30">Z</text>
+</svg>

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 220" width="200" height="220">
+  <defs>
+    <radialGradient id="body" cx="50%" cy="35%" r="75%">
+      <stop offset="0%" stop-color="#F6C682"/>
+      <stop offset="100%" stop-color="#E59B42"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="100" cy="205" rx="62" ry="12" fill="#000" opacity="0.12"/>
+  <path d="M100 40 C150 40 168 95 168 140 C168 185 140 205 100 205 C60 205 32 185 32 140 C32 95 50 40 100 40 Z" fill="url(#body)" stroke="#B5722B" stroke-width="3"/>
+  <circle cx="74" cy="78" r="6" fill="#fff" opacity="0.5"/>
+  <!-- one big, one squint -->
+  <circle cx="78" cy="125" r="18" fill="#fff" stroke="#B5722B" stroke-width="2"/>
+  <circle class="pupil" cx="78" cy="124" r="9" fill="#3a2a1a"/>
+  <path d="M112 126 Q122 118 132 126" fill="none" stroke="#3a2a1a" stroke-width="4" stroke-linecap="round"/>
+  <path d="M70 102 Q80 98 88 103" fill="none" stroke="#8a5a2a" stroke-width="3" stroke-linecap="round"/>
+  <ellipse cx="62" cy="150" rx="9" ry="6" fill="#F4A6A6" opacity="0.55"/>
+  <path d="M92 156 Q100 150 108 156" fill="none" stroke="#3a2a1a" stroke-width="3" stroke-linecap="round"/>
+  <text x="142" y="80" font-family="Arial" font-size="40" font-weight="bold" fill="#E07B2A">?</text>
+</svg>
