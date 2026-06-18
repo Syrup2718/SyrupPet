@@ -38,7 +38,7 @@ export const DEFAULT_CONFIG: AppConfig = {
       model: 'local-model'
     }
   },
-  character: 'default',
+  character: 'custom',
   persona: DEFAULT_PERSONA,
   hotkeys: {
     toggleChat: 'CommandOrControl+Shift+Space',
