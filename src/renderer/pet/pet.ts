@@ -26,8 +26,9 @@ const CLICK_LINES = ['嗨嗨~', '在的在的!', '欸嘿~', '需要我嗎?', '�
  */
 interface CharacterManifest {
   name?: string
-  mode: 'svg' | 'single'
+  mode: 'svg' | 'single' | 'multi'
   image?: string // single mode only; defaults to "character.png"
+  images?: Partial<Record<Emotion, string>> // multi mode: per-emotion file names
 }
 
 /** A render strategy: how a given pack draws emotions and reacts to the cursor. */
@@ -55,6 +56,12 @@ async function init(): Promise<void> {
 
 async function buildRenderer(pack: string): Promise<CharacterRenderer> {
   const manifest = await loadManifest(pack)
+  if (manifest.mode === 'multi') {
+    const multi = await MultiImageRenderer.create(pack, manifest.images || {})
+    if (multi) return multi
+    console.warn(`[pet] multi-image pack "${pack}" failed to load; falling back to default SVG`)
+    return await SvgRenderer.create('default')
+  }
   if (manifest.mode === 'single') {
     const single = await SingleImageRenderer.create(pack, manifest.image || 'character.png')
     if (single) return single
@@ -142,12 +149,64 @@ class SingleImageRenderer implements CharacterRenderer {
   }
 
   updateGaze(dx: number, dy: number, dist: number): void {
-    // lean the whole body toward the cursor as a stand-in for "looking at it"
-    const len = dist || 1
-    const tilt = (dx / len) * MAX_TILT_DEG
-    const shiftY = (dy / len) * 3
-    this.img.style.transform = `rotate(${tilt.toFixed(1)}deg) translateY(${shiftY.toFixed(1)}px)`
+    leanToward(this.img, dx, dy, dist)
   }
+}
+
+// -------------------------------------------- multi image (one per emotion)
+class MultiImageRenderer implements CharacterRenderer {
+  private img!: HTMLImageElement
+  private sources = new Map<Emotion, string>()
+  private currentSrc = ''
+
+  static async create(
+    pack: string,
+    images: Partial<Record<Emotion, string>>
+  ): Promise<MultiImageRenderer | null> {
+    const r = new MultiImageRenderer()
+    await Promise.all(
+      EMOTIONS.map(async (emotion) => {
+        const file = images[emotion] || `${emotion}.png`
+        const src = `/characters/${pack}/${file}`
+        if (await canLoad(src)) r.sources.set(emotion, src) // also warms the browser cache
+      })
+    )
+    // need at least the resting face to be usable
+    if (!r.srcFor('normal')) return null
+
+    characterEl.innerHTML = ''
+    r.img = document.createElement('img')
+    r.img.className = 'char-img'
+    r.img.draggable = false
+    r.currentSrc = r.srcFor('normal')
+    r.img.src = r.currentSrc
+    characterEl.append(r.img)
+    return r
+  }
+
+  /** The image for an emotion, falling back to the resting face when missing. */
+  private srcFor(emotion: Emotion): string {
+    return this.sources.get(emotion) || this.sources.get('normal') || ''
+  }
+
+  setEmotion(emotion: Emotion): void {
+    const src = this.srcFor(emotion)
+    if (!src || src === this.currentSrc) return
+    this.currentSrc = src
+    this.img.src = src
+  }
+
+  updateGaze(dx: number, dy: number, dist: number): void {
+    leanToward(this.img, dx, dy, dist)
+  }
+}
+
+/** Lean a raster image toward the cursor as a stand-in for "looking at it". */
+function leanToward(img: HTMLImageElement, dx: number, dy: number, dist: number): void {
+  const len = dist || 1
+  const tilt = (dx / len) * MAX_TILT_DEG
+  const shiftY = (dy / len) * 3
+  img.style.transform = `rotate(${tilt.toFixed(1)}deg) translateY(${shiftY.toFixed(1)}px)`
 }
 
 /** Resolve true once an image URL has loaded, false if it errors. */

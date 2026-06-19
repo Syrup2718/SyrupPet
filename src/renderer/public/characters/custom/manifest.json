@@ -1,5 +1,12 @@
 {
   "name": "小漿糖 Q版插畫",
-  "mode": "single",
-  "image": "character.png"
+  "mode": "multi",
+  "images": {
+    "normal": "normal.png",
+    "happy": "happy.png",
+    "confused": "confused.png",
+    "angry": "angry.png",
+    "thinking": "thinking.png",
+    "sleepy": "sleepy.png"
+  }
 }
