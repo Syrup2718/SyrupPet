@@ -94,6 +94,9 @@ body {
 }
 .msg .emo {
   margin-right: 4px;
+  font-size: 0.78em;
+  opacity: 0.45;
+  vertical-align: middle;
 }
 .msg.system {
   align-self: center;
