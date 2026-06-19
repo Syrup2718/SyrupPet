@@ -274,7 +274,11 @@ function updateGaze(cursor: CursorPoint): void {
 // ------------------------------------------------------------- interaction
 function wireInteraction(): void {
   // Toggle window click-through based on whether the cursor is over the body.
+  // IMPORTANT: never toggle while dragging — if the window went click-through
+  // mid-drag, the renderer would stop receiving the mouseup that ends the drag,
+  // and the pet would follow the cursor forever ("drifting away").
   document.addEventListener('mousemove', (e) => {
+    if (characterEl.classList.contains('dragging')) return
     window.syrup.pet.setInteractive(isOverCharacter(e.clientX, e.clientY))
   })
 
@@ -286,6 +290,8 @@ function wireInteraction(): void {
     downX = e.clientX
     downY = e.clientY
     dragging = false
+    // Lock interactive for the whole drag so we always get the mouseup.
+    window.syrup.pet.setInteractive(true)
     window.syrup.pet.dragStart()
     characterEl.classList.add('dragging')
   })
@@ -294,6 +300,8 @@ function wireInteraction(): void {
     if (!characterEl.classList.contains('dragging')) return
     characterEl.classList.remove('dragging')
     window.syrup.pet.dragEnd()
+    // Re-evaluate click-through now that the drag is over.
+    window.syrup.pet.setInteractive(isOverCharacter(e.clientX, e.clientY))
     const moved = Math.hypot(e.clientX - downX, e.clientY - downY)
     if (moved < 5 && !dragging) onClick()
   })
