@@ -91,12 +91,21 @@ body {
   color: #4a3525;
   border: 1px solid #ecd9bd;
   border-bottom-left-radius: 4px;
+  position: relative;
+  margin-top: 9px; /* room for the corner emotion badge floating above */
 }
+/* emotion shown as a small chip peeking out of the bubble's top-left corner */
 .msg .emo {
-  margin-right: 4px;
-  font-size: 0.78em;
-  opacity: 0.45;
-  vertical-align: middle;
+  position: absolute;
+  top: -9px;
+  left: 8px;
+  font-size: 12px;
+  line-height: 1;
+  opacity: 0.85;
+  padding: 1px 4px;
+  background: #fff;
+  border: 1px solid #ecd9bd;
+  border-radius: 8px;
 }
 .msg.system {
   align-self: center;
