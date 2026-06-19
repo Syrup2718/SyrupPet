@@ -86,9 +86,17 @@ export class WindowManager {
     const [wx, wy] = this.pet.getPosition()
     const offsetX = cursor.x - wx
     const offsetY = cursor.y - wy
+    let lastX = cursor.x
+    let lastY = cursor.y
     this.dragTimer = setInterval(() => {
       if (!this.pet) return
       const p = screen.getCursorScreenPoint()
+      // Only move when the cursor actually moved. Re-issuing setPosition every
+      // tick lets DPI rounding / 1px cursor jitter make the window creep on its
+      // own even while the cursor is held still.
+      if (p.x === lastX && p.y === lastY) return
+      lastX = p.x
+      lastY = p.y
       this.pet.setPosition(p.x - offsetX, p.y - offsetY)
     }, 16)
   }
