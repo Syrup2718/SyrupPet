@@ -13,7 +13,11 @@ const EMOTION_EMOJI: Record<Emotion, string> = {
   confused: '❓',
   angry: '😤',
   thinking: '🤔',
-  sleepy: '😴'
+  sleepy: '😴',
+  shy: '😳',
+  excited: '✨',
+  love: '💕',
+  sad: '🥺'
 }
 
 function addMessage(role: 'user' | 'assistant' | 'system', text: string, emotion?: Emotion): void {

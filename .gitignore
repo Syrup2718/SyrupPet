@@ -27,6 +27,10 @@ Thumbs.db
 /angry.png
 /thinking.png
 /sleepy.png
+/shy.png
+/excited.png
+/love.png
+/sad.png
 
 # local env / secrets
 .env

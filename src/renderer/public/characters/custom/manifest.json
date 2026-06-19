@@ -7,6 +7,10 @@
     "confused": "confused.png",
     "angry": "angry.png",
     "thinking": "thinking.png",
-    "sleepy": "sleepy.png"
+    "sleepy": "sleepy.png",
+    "shy": "shy.png",
+    "excited": "excited.png",
+    "love": "love.png",
+    "sad": "sad.png"
   }
 }

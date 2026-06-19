@@ -18,8 +18,11 @@ export function buildSystemPrompt(persona: string): string {
     `  "action": 從這些選一個 [${ACTIONS.join(', ')}]`,
     '}',
     '',
-    '情緒對應：normal=平常, happy=開心, confused=疑惑, angry=生氣/不滿, thinking=思考中, sleepy=想睡/放鬆。',
-    '動作對應：idle=不動, wave=揮手打招呼, jump=開心跳, nod=點頭同意, shake=搖頭, sleep=打瞌睡。',
+    '情緒對應（依當下心情挑最貼切的一個）：',
+    '  normal=平常溫柔, happy=開心/有進展, confused=疑惑/需要確認, angry=被連點或可愛吐槽(別真兇),',
+    '  thinking=分析問題/看錯誤/規劃中, sleepy=想睡/深夜/提醒休息,',
+    '  shy=被誇獎或害羞, excited=很興奮/超開心跟著嗨, love=撒嬌/表達喜歡與陪伴, sad=心疼/擔心使用者。',
+    '動作對應：idle=不動, wave=揮手打招呼, jump=開心跳, nod=點頭同意, shake=搖頭/吐槽, sleep=打瞌睡。',
     '請讓 emotion 和 action 真的符合你說的話，這樣你才有生命感。'
   ].join('\n')
 }

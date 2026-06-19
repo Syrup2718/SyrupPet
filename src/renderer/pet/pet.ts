@@ -1,9 +1,9 @@
+import { EMOTIONS } from '@shared/types'
 import type { AppConfig, Emotion, PetReply, CursorPoint } from '@shared/types'
 
 const characterEl = document.getElementById('character') as HTMLDivElement
 const bubbleEl = document.getElementById('bubble') as HTMLDivElement
 
-const EMOTIONS: Emotion[] = ['normal', 'happy', 'confused', 'angry', 'thinking', 'sleepy']
 const MAX_PUPIL_OFFSET = 4 // px the pupils can drift toward the cursor
 const MAX_TILT_DEG = 7 // single-image: how far the body leans toward the cursor
 
@@ -13,7 +13,11 @@ const EMOTION_EMOJI: Record<Emotion, string> = {
   confused: '❓',
   angry: '😤',
   thinking: '🤔',
-  sleepy: '😴'
+  sleepy: '😴',
+  shy: '😳',
+  excited: '✨',
+  love: '💕',
+  sad: '🥺'
 }
 
 /** Random idle lines for the click reaction (no LLM call needed). */
