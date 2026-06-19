@@ -1,6 +1,7 @@
 import { BrowserWindow, screen } from 'electron'
 import { join } from 'node:path'
 import { loadRenderer } from './loadRenderer'
+import appIconPath from '../../../resources/icon.png?asset'
 
 const PET_WIDTH = 280
 const PET_HEIGHT = 440
@@ -138,6 +139,7 @@ export class WindowManager {
       resizable: false,
       skipTaskbar: false,
       alwaysOnTop: true,
+      icon: appIconPath,
       title: entry === 'chat' ? '小漿糖 — Chat' : '小漿糖 — 設定',
       webPreferences: {
         preload: this.preloadPath,

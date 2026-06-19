@@ -20,6 +20,7 @@ Thumbs.db
 # stray character images dropped at repo root for transfer
 # (the real assets live in src/renderer/public/characters/<pack>/)
 /character.png
+/syrup.png
 /normal.png
 /happy.png
 /confused.png

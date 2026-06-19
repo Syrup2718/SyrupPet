@@ -1,5 +1,6 @@
 import { Tray, Menu, nativeImage } from 'electron'
 import type { NativeImage } from 'electron'
+import trayIconPath from '../../../../resources/tray.png?asset'
 
 export interface TrayHandlers {
   onToggleChat: () => void
@@ -37,12 +38,7 @@ export class TrayService {
   }
 }
 
-/** A tiny caramel-coloured dot drawn as a data URL — placeholder tray icon. */
+/** The syrup-jar tray icon (32px PNG, copied to the build output by electron-vite). */
 function makeIcon(): NativeImage {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16">
-    <circle cx="8" cy="8" r="7" fill="#E8A04B" stroke="#B5722B" stroke-width="1.5"/>
-    <circle cx="5.5" cy="7" r="1.2" fill="#3a2a1a"/>
-    <circle cx="10.5" cy="7" r="1.2" fill="#3a2a1a"/>
-  </svg>`
-  return nativeImage.createFromDataURL(`data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`)
+  return nativeImage.createFromPath(trayIconPath)
 }
