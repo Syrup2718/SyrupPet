@@ -50,6 +50,9 @@ async function init(): Promise<void> {
   els.provider.value = config.provider
   loadProviderFields(config.provider)
   els.character.value = config.character
+  // If the saved pack is no longer offered in the dropdown (e.g. chibi/default),
+  // the value won't match any <option> and goes blank — fall back to custom.
+  if (!els.character.value) els.character.value = 'custom'
   els.persona.value = config.persona
   els.followCursor.checked = config.behaviour.followCursor
   els.useEnvironmentContext.checked = config.behaviour.useEnvironmentContext
