@@ -81,6 +81,30 @@ export interface CursorPoint {
   y: number
 }
 
+/** A local to-do item. Persisted in userData/tasks.json. */
+export type TaskStatus = 'todo' | 'done'
+export interface Task {
+  id: string
+  title: string
+  status: TaskStatus
+  /** Epoch ms when it should be reminded, or null for an undated to-do. */
+  dueAt: number | null
+  createdAt: number
+  completedAt: number | null
+  /** Whether a due reminder has already fired. */
+  reminded: boolean
+  source: 'chat' | 'manual'
+}
+
+/** A task mutation the LLM may emit in its reply JSON (alongside text/emotion). */
+export interface TaskOp {
+  op: 'add' | 'done' | 'remove'
+  /** Title to add, or text to match an existing open task for done/remove. */
+  title?: string
+  /** For add: remind me in this many minutes (optional). */
+  dueMinutes?: number
+}
+
 /** Supported LLM provider kinds. All are OpenAI-compatible HTTP APIs. */
 export type LLMProviderId = 'openai' | 'deepseek' | 'ollama' | 'custom'
 

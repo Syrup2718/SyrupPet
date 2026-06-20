@@ -7,7 +7,7 @@ import type { EnvironmentService } from '../environment/environmentService'
  * 小漿糖's voice) — never a canned line, so it stays natural and varied.
  */
 export interface ProactiveHint {
-  trigger: 'idle' | 'overwork' | 'lateNight' | 'appOpen' | 'clipError'
+  trigger: 'idle' | 'overwork' | 'lateNight' | 'appOpen' | 'clipError' | 'taskDue'
   note: string
 }
 
@@ -18,7 +18,8 @@ const COOLDOWN: Record<ProactiveHint['trigger'], number> = {
   overwork: 45 * 60_000, // "休息一下" — at most every 45 min
   appOpen: 20 * 60_000, // greet a freshly-focused app — at most every 20 min
   lateNight: 90 * 60_000, // plus a hard daily cap below
-  clipError: 5 * 60_000 // offer to help with a copied error — at most every 5 min
+  clipError: 5 * 60_000, // offer to help with a copied error — at most every 5 min
+  taskDue: 0 // due reminders are fired directly by the controller, not via pick()
 }
 const IDLE_TRIGGER_SECONDS = 300 // 5 min of no input = "卡住了嗎?"
 const BREAK_RESETS_AFTER = 180 // 3 min idle counts as a real break (resets work streak)

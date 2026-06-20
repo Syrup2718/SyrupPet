@@ -1,6 +1,7 @@
-import type { ChatRequest, PetReply } from '@shared/types'
+import type { ChatRequest, PetReply, TaskOp } from '@shared/types'
 import { EMOTIONS } from '@shared/types'
 import { IPC } from '@shared/ipc'
+import { getTaskStore } from './services/tasks/taskStore'
 import { WindowManager } from './windows/windowManager'
 import { LLMService } from './services/llm/LLMService'
 import { EnvironmentService } from './services/environment/environmentService'
@@ -20,6 +21,7 @@ export class PetController {
   private inFlight: AbortController | null = null
   private proactive: ProactiveService
   private clipboardWatcher: ClipboardWatcher
+  private taskTimer: NodeJS.Timeout | null = null
 
   constructor(
     private windows: WindowManager,
@@ -59,6 +61,38 @@ export class PetController {
     // Let her speak up on her own, with restraint (cooldowns live in the service).
     this.proactive.start()
     this.clipboardWatcher.start() // self-gates; reads nothing unless opted in
+
+    // Remind about due to-do items (set via "提醒我30分鐘後…").
+    this.taskTimer = setInterval(() => void this.checkDueTasks(), 30_000)
+  }
+
+  /** Apply the to-do mutations the LLM emitted alongside a reply. */
+  private applyTaskOps(ops: TaskOp[]): void {
+    if (!ops.length) return
+    const store = getTaskStore()
+    for (const op of ops) {
+      if (!op.title) continue
+      if (op.op === 'add') store.add(op.title, op.dueMinutes)
+      else if (op.op === 'done') store.complete(op.title)
+      else if (op.op === 'remove') store.remove(op.title)
+    }
+  }
+
+  /** Fire a gentle reminder for the first task whose due time has passed. */
+  private async checkDueTasks(): Promise<void> {
+    if (this.inFlight) return
+    const store = getTaskStore()
+    const due = store.listDue(Date.now())
+    if (!due.length) return
+    const task = due[0]
+    store.markReminded(task.id) // mark first so a slow LLM call can't double-fire
+    await this.runProactive(
+      {
+        trigger: 'taskDue',
+        note: `提醒：使用者之前請你提醒他「${task.title}」，現在時間到了。請主動、簡短、溫柔地提醒他。`
+      },
+      true
+    )
   }
 
   /** Handle a user chat message from the chat window. */
@@ -98,7 +132,7 @@ export class PetController {
       ? await this.environment.getSnapshot()
       : undefined
     try {
-      const reply = await this.llm.reply({ intent: 'proactive', content: hint.note, context })
+      const { reply } = await this.llm.reply({ intent: 'proactive', content: hint.note, context })
       this.emitReply({ intent: 'proactive', content: hint.note }, reply)
     } catch (err) {
       console.warn('[proactive] skipped:', err instanceof Error ? err.message : String(err))
@@ -115,7 +149,8 @@ export class PetController {
     this.windows.sendToChat(IPC.chatThinking, true)
 
     try {
-      const reply = await this.llm.reply(req, this.inFlight.signal)
+      const { reply, taskOps } = await this.llm.reply(req, this.inFlight.signal)
+      this.applyTaskOps(taskOps)
       this.emitReply(req, reply)
       return reply
     } catch (err) {
@@ -159,6 +194,7 @@ export class PetController {
   }
 
   dispose(): void {
+    if (this.taskTimer) clearInterval(this.taskTimer)
     this.proactive.stop()
     this.clipboardWatcher.stop()
     this.cursor.stop()

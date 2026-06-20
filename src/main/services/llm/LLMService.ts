@@ -1,8 +1,15 @@
-import type { AppConfig, ChatMessage, ChatRequest, PetReply } from '@shared/types'
+import type { AppConfig, ChatMessage, ChatRequest, PetReply, TaskOp } from '@shared/types'
 import { ACTIONS, EMOTIONS } from '@shared/types'
 import { OpenAICompatibleProvider } from './OpenAICompatibleProvider'
 import type { LLMProvider } from './LLMProvider'
 import { buildSystemPrompt, buildUserPrompt } from './prompt'
+import { getTaskStore } from '../tasks/taskStore'
+
+/** A parsed LLM turn: the pet's reply plus any to-do mutations it requested. */
+export interface LLMReply {
+  reply: PetReply
+  taskOps: TaskOp[]
+}
 
 /**
  * Orchestrates a chat turn: builds messages from the persona + history + the
@@ -32,12 +39,12 @@ export class LLMService {
     this.history = []
   }
 
-  async reply(req: ChatRequest, signal?: AbortSignal): Promise<PetReply> {
+  async reply(req: ChatRequest, signal?: AbortSignal): Promise<LLMReply> {
     const config = this.getConfig()
     const provider = this.buildProvider(config)
 
     const systemPrompt = buildSystemPrompt(config.persona)
-    const userPrompt = buildUserPrompt(req)
+    const userPrompt = buildUserPrompt(req, getTaskStore().listOpen())
 
     const messages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
@@ -46,15 +53,16 @@ export class LLMService {
     ]
 
     const raw = await provider.complete(messages, { jsonMode: true, signal })
-    const parsed = parsePetReply(raw)
+    const reply = parsePetReply(raw)
+    const taskOps = parseTaskOps(raw)
 
     // Only commit real conversational turns to memory (not clipboard one-offs).
     if (req.intent === 'chat') {
       this.pushHistory({ role: 'user', content: req.content })
-      this.pushHistory({ role: 'assistant', content: parsed.text })
+      this.pushHistory({ role: 'assistant', content: reply.text })
     }
 
-    return parsed
+    return { reply, taskOps }
   }
 
   private pushHistory(msg: ChatMessage): void {
@@ -84,6 +92,30 @@ export function parsePetReply(raw: string): PetReply {
     return { text, emotion, action }
   } catch {
     return fallback
+  }
+}
+
+/** Pull any `tasks` mutations out of the same reply JSON. Tolerant — bad shapes
+ *  are skipped rather than thrown, so a malformed op never breaks the chat. */
+export function parseTaskOps(raw: string): TaskOp[] {
+  const jsonText = extractJsonObject(raw)
+  if (!jsonText) return []
+  try {
+    const obj = JSON.parse(jsonText) as { tasks?: unknown }
+    if (!Array.isArray(obj.tasks)) return []
+    const ops: TaskOp[] = []
+    for (const item of obj.tasks) {
+      if (!item || typeof item !== 'object') continue
+      const o = item as Record<string, unknown>
+      if (o.op !== 'add' && o.op !== 'done' && o.op !== 'remove') continue
+      const title = typeof o.title === 'string' ? o.title.trim() : ''
+      if (!title) continue // every op needs a title to act on
+      const dueMinutes = typeof o.dueMinutes === 'number' && o.dueMinutes > 0 ? o.dueMinutes : undefined
+      ops.push({ op: o.op, title, dueMinutes })
+    }
+    return ops
+  } catch {
+    return []
   }
 }
 

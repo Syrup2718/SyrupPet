@@ -24,7 +24,8 @@ npm run dist       # electron-builder 產生安裝檔 -> dist/
   - `petController.ts`：「腦幹」— 意圖 → `LLMService` → 把 `PetReply` 廣播到桌寵 + 聊天視窗
   - `services/llm/`：`LLMProvider` 介面 + `OpenAICompatibleProvider`(所有 provider 共用) + `prompt.ts` + `parsePetReply`
   - `services/environment/`：前景視窗(`foregroundWindow.ts`,PowerShell+Win32)、閒置(`powerMonitor`)、全域游標
-  - `services/`：`clipboard`、`hotkeys`、`tray`；`config/`：存到 `%APPDATA%\syrup-pet\config.json`
+  - `services/`：`clipboard`、`hotkeys`、`tray`、`proactive`(主動陪伴)、`tasks`(本地代辦,存 `%APPDATA%\syrup-pet\tasks.json`)；`config/`：存 `config.json`
+  - **代辦系統**:聊天驅動。LLM 在回覆 JSON 夾帶 `tasks:[{op:add/done/remove,title,dueMinutes}]`(由 `parseTaskOps` 解析,`petController.applyTaskOps` 套用);每次聊天會把目前 open 清單塞進 user prompt 當脈絡,所以她答得出「還有什麼沒做」。到期提醒由 `petController` 每 30 秒檢查 `taskStore.listDue`。
   - `windows/windowManager.ts`：透明/無邊框/置頂、拖曳、click-through
   - `services/tray/trayService.ts`：托盤圖示用 `resources/tray.png`(電腦透過 electron-vite `?asset` 載入)
 - `resources/` — 主程序用的靜態資產(用 `import x from '...?asset'` 載入,型別宣告在 `src/main/env.d.ts`):`tray.png`(托盤)、`icon.png`(聊天/設定視窗工作列圖示)。`build/icon.ico` 是 electron-builder 的安裝檔/exe 圖示。圖片暫存於 repo 根的 `syrup.png`/`*.png` 已被 `.gitignore` 排除。

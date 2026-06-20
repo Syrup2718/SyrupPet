@@ -1,5 +1,5 @@
 import { ACTIONS, EMOTIONS } from '@shared/types'
-import type { ChatRequest, EnvironmentSnapshot } from '@shared/types'
+import type { ChatRequest, EnvironmentSnapshot, Task } from '@shared/types'
 
 /**
  * Builds the system prompt. The key idea of SyrupPet: the LLM must return a
@@ -23,7 +23,17 @@ export function buildSystemPrompt(persona: string): string {
     '  thinking=分析問題/看錯誤/規劃中, sleepy=想睡/深夜/提醒休息,',
     '  shy=被誇獎或害羞, excited=很興奮/超開心跟著嗨, love=撒嬌/表達喜歡與陪伴, sad=心疼/擔心使用者。',
     '動作對應：idle=不動, wave=揮手打招呼, jump=開心跳, nod=點頭同意, shake=搖頭/吐槽, sleep=打瞌睡。',
-    '請讓 emotion 和 action 真的符合你說的話，這樣你才有生命感。'
+    '請讓 emotion 和 action 真的符合你說的話，這樣你才有生命感。',
+    '',
+    '【代辦清單】',
+    '使用者可能請你記事情、新增/完成/查代辦。目前的清單會出現在使用者訊息裡（你看得到）。',
+    '若需要「異動」清單，在 JSON 多放一個 "tasks" 陣列，元素格式：',
+    '  {"op":"add","title":"要做的事","dueMinutes":可選，幾分鐘後提醒}',
+    '  {"op":"done","title":"要完成的那項(用清單裡的字)"}',
+    '  {"op":"remove","title":"要刪掉的那項"}',
+    '一次可放多個（例如「今天要做 A、B、C」就放三個 add）。',
+    '只是聊天、或只是「查詢」清單時，不要放 tasks（或放空陣列），直接用 text 親口回答即可。',
+    'text 一律維持小漿糖的口吻，例如「好，記下來囉!」「這幾項我先幫你列著~」。'
   ].join('\n')
 }
 
@@ -36,11 +46,18 @@ function describeEnvironment(env: EnvironmentSnapshot): string {
 }
 
 /** Wraps the actual user/clipboard content with intent-specific framing. */
-export function buildUserPrompt(req: ChatRequest): string {
+export function buildUserPrompt(req: ChatRequest, openTasks: Task[] = []): string {
   const blocks: string[] = []
 
   if (req.context) {
     blocks.push(`（背景資訊，僅供參考，使用者沒有直接打這些字）：${describeEnvironment(req.context)}`)
+  }
+
+  if (openTasks.length) {
+    const list = openTasks
+      .map((t, i) => `${i + 1}. ${t.title}${t.dueAt ? '（有設提醒）' : ''}`)
+      .join('\n')
+    blocks.push(`（使用者目前還沒做完的代辦清單）：\n${list}`)
   }
 
   switch (req.intent) {
