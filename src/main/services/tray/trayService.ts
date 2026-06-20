@@ -6,6 +6,8 @@ export interface TrayHandlers {
   onToggleChat: () => void
   onTogglePet: () => void
   onOpenSettings: () => void
+  onTestProactive: () => void
+  onPreviewEmotions: () => void
   onQuit: () => void
 }
 
@@ -25,6 +27,9 @@ export class TrayService {
         { label: '👀 顯示/隱藏桌寵', click: handlers.onTogglePet },
         { type: 'separator' },
         { label: '⚙️  設定 (Settings)', click: handlers.onOpenSettings },
+        { type: 'separator' },
+        { label: '🔔 測試:主動說一句', click: handlers.onTestProactive },
+        { label: '🎭 測試:輪播 10 表情', click: handlers.onPreviewEmotions },
         { type: 'separator' },
         { label: '結束 (Quit)', click: handlers.onQuit }
       ])

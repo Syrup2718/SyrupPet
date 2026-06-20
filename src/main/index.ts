@@ -53,6 +53,8 @@ function bootstrap(): void {
     onToggleChat: () => windows.toggleChat(),
     onTogglePet: () => windows.togglePet(),
     onOpenSettings: () => windows.openSettings(),
+    onTestProactive: () => controller.testProactive(),
+    onPreviewEmotions: () => controller.previewEmotions(),
     onQuit: () => app.quit()
   })
 

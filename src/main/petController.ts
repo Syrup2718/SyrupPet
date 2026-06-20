@@ -1,4 +1,5 @@
 import type { ChatRequest, PetReply } from '@shared/types'
+import { EMOTIONS } from '@shared/types'
 import { IPC } from '@shared/ipc'
 import { WindowManager } from './windows/windowManager'
 import { LLMService } from './services/llm/LLMService'
@@ -87,9 +88,9 @@ export class PetController {
    * line that errors out would just be annoying). Only the pet bubble + chat get
    * the reply if it succeeds.
    */
-  private async runProactive(hint: ProactiveHint): Promise<void> {
+  private async runProactive(hint: ProactiveHint, force = false): Promise<void> {
     const config = getConfigStore().get()
-    if (!config.behaviour.proactive) return
+    if (!force && !config.behaviour.proactive) return
     // Don't talk over an in-flight user request.
     if (this.inFlight) return
 
@@ -136,6 +137,25 @@ export class PetController {
   private emitReply(req: ChatRequest, reply: PetReply): void {
     this.windows.sendToPet(IPC.petSay, reply)
     this.windows.sendToChat(IPC.chatReply, { request: req, reply })
+  }
+
+  // --------------------------------------------------------------- test hooks
+  /** Trigger one proactive line right now, ignoring cooldowns and the toggle. */
+  testProactive(): void {
+    void this.runProactive(
+      {
+        trigger: 'idle',
+        note: '（這是一則測試訊息：請主動、自然、簡短地關心使用者一句，證明「主動陪伴」有在運作。）'
+      },
+      true
+    )
+  }
+
+  /** Cycle through all emotions on the pet (no LLM) so you can preview a pack. */
+  previewEmotions(): void {
+    EMOTIONS.forEach((emotion, i) => {
+      setTimeout(() => this.windows.sendToPet(IPC.petEmotion, emotion), i * 1200)
+    })
   }
 
   dispose(): void {
