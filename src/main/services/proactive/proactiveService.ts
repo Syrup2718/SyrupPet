@@ -7,7 +7,7 @@ import type { EnvironmentService } from '../environment/environmentService'
  * 小漿糖's voice) — never a canned line, so it stays natural and varied.
  */
 export interface ProactiveHint {
-  trigger: 'idle' | 'overwork' | 'lateNight' | 'appOpen'
+  trigger: 'idle' | 'overwork' | 'lateNight' | 'appOpen' | 'clipError'
   note: string
 }
 
@@ -17,7 +17,8 @@ const COOLDOWN: Record<ProactiveHint['trigger'], number> = {
   idle: 10 * 60_000, // "你停好久了" — at most every 10 min
   overwork: 45 * 60_000, // "休息一下" — at most every 45 min
   appOpen: 20 * 60_000, // greet a freshly-focused app — at most every 20 min
-  lateNight: 90 * 60_000 // plus a hard daily cap below
+  lateNight: 90 * 60_000, // plus a hard daily cap below
+  clipError: 5 * 60_000 // offer to help with a copied error — at most every 5 min
 }
 const IDLE_TRIGGER_SECONDS = 300 // 5 min of no input = "卡住了嗎?"
 const BREAK_RESETS_AFTER = 180 // 3 min idle counts as a real break (resets work streak)
@@ -62,6 +63,22 @@ export class ProactiveService {
 
   stop(): void {
     this.env.off('update', this.handler)
+  }
+
+  /**
+   * Called by the clipboard watcher when an error-looking blob was copied. This
+   * is a direct reaction to a user action, so it bypasses the global gap but
+   * keeps its own cooldown. The content is NOT passed in — she only offers help.
+   */
+  notifyClipboardError(): void {
+    const now = Date.now()
+    if (!this.isEnabled() || !this.cooled('clipError', now)) return
+    this.lastByTrigger.clipError = now
+    this.lastGlobal = now // count it as "she just spoke" so env-rules don't pile on
+    this.onFire({
+      trigger: 'clipError',
+      note: '使用者剛複製了一段看起來像「錯誤訊息」的內容（你還沒看到實際內容）。請主動、簡短、輕鬆地問他要不要讓你幫忙看看，可以順帶提示他按「分析剪貼簿」的快捷鍵。'
+    })
   }
 
   private evaluate(snap: EnvironmentSnapshot): void {

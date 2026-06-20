@@ -38,7 +38,8 @@ npm run dist       # electron-builder 產生安裝檔 -> dist/
   - 切換角色:設定頁「🎨 角色外觀」下拉 → 存進 `config.character` → `registerIpc` 偵測到 `patch.character` 就呼叫 `windows.reloadPet()` 即時重載
 
 ## 重要慣例 / 紅線
-- **隱私(使用者明確要求)**：不做 keylogger、不記錄打字內容;鍵盤只看 OS 閒置秒數。剪貼簿**只在使用者按快捷鍵時**讀取,絕不輪詢/自動偷看。環境快照只在使用者主動聊天且開啟設定時才送 LLM。
+- **隱私(使用者明確要求)**：不做 keylogger、不記錄打字內容;鍵盤只看 OS 閒置秒數。環境快照只在使用者主動聊天且開啟設定時才送 LLM。
+  - 剪貼簿**預設只在使用者按快捷鍵時**讀取一次。**例外(使用者後來明確同意的選項 B)**:設定裡有個**預設關閉**的 `behaviour.watchClipboard`,打開後 `ClipboardWatcher` 才會輪詢剪貼簿、在「變化且像錯誤」時**主動提議**幫忙。即使開啟,也**只提議、不把剪貼簿內容送 LLM**(實際分析仍只在快捷鍵時)。關閉時完全不呼叫 `clipboard.readText()`。
 - **身體與大腦分離**：`petController` 只負責「拿到 `PetReply` 後廣播」;renderer 只負責「收到後演出來」。未來 PNG→Live2D 只改 renderer 演出層,沿用同一組 `emotion`/`action`。
 - **新增 LLM provider**：若是 OpenAI 相容,只加設定即可;否則實作 `LLMProvider` 介面,在 `LLMService.buildProvider` 分流,上層不動。
 - **renderer 不直接碰 ipcRenderer**：一律走 `window.syrup`（preload）。新增 IPC 要同時更新 `shared/ipc.ts`、`shared/api.ts`、`preload`、`registerIpc.ts`。

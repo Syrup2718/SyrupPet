@@ -12,6 +12,7 @@ const els = {
   followCursor: $<HTMLInputElement>('followCursor'),
   useEnvironmentContext: $<HTMLInputElement>('useEnvironmentContext'),
   proactive: $<HTMLInputElement>('proactive'),
+  watchClipboard: $<HTMLInputElement>('watchClipboard'),
   launchOnStartup: $<HTMLInputElement>('launchOnStartup'),
   proximityRadius: $<HTMLInputElement>('proximityRadius'),
   proximityVal: $<HTMLSpanElement>('proximityVal'),
@@ -53,6 +54,7 @@ async function init(): Promise<void> {
   els.followCursor.checked = config.behaviour.followCursor
   els.useEnvironmentContext.checked = config.behaviour.useEnvironmentContext
   els.proactive.checked = config.behaviour.proactive
+  els.watchClipboard.checked = config.behaviour.watchClipboard
   els.launchOnStartup.checked = config.launchOnStartup
   els.proximityRadius.value = String(config.behaviour.proximityRadius)
   els.proximityVal.textContent = String(config.behaviour.proximityRadius)
@@ -88,7 +90,8 @@ async function save(): Promise<void> {
       followCursor: els.followCursor.checked,
       useEnvironmentContext: els.useEnvironmentContext.checked,
       proximityRadius: Number(els.proximityRadius.value),
-      proactive: els.proactive.checked
+      proactive: els.proactive.checked,
+      watchClipboard: els.watchClipboard.checked
     },
     launchOnStartup: els.launchOnStartup.checked,
     hotkeys: {

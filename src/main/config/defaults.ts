@@ -93,7 +93,8 @@ export const DEFAULT_CONFIG: AppConfig = {
     followCursor: true,
     useEnvironmentContext: true,
     proximityRadius: 180,
-    proactive: true
+    proactive: true,
+    watchClipboard: false
   },
   launchOnStartup: false
 }

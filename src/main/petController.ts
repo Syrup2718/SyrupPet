@@ -7,6 +7,7 @@ import { CursorTracker } from './services/environment/cursorTracker'
 import { ProactiveService } from './services/proactive/proactiveService'
 import type { ProactiveHint } from './services/proactive/proactiveService'
 import { readClipboardText } from './services/clipboard/clipboardService'
+import { ClipboardWatcher } from './services/clipboard/clipboardWatcher'
 import { getConfigStore } from './config/configStore'
 
 /**
@@ -17,6 +18,7 @@ import { getConfigStore } from './config/configStore'
 export class PetController {
   private inFlight: AbortController | null = null
   private proactive: ProactiveService
+  private clipboardWatcher: ClipboardWatcher
 
   constructor(
     private windows: WindowManager,
@@ -28,6 +30,15 @@ export class PetController {
       this.environment,
       (hint) => void this.runProactive(hint),
       () => getConfigStore().get().behaviour.proactive
+    )
+    // Opt-in: only polls the clipboard when BOTH proactive and watchClipboard
+    // are on. On an error-looking change it just offers help (no content sent).
+    this.clipboardWatcher = new ClipboardWatcher(
+      () => {
+        const b = getConfigStore().get().behaviour
+        return b.proactive && b.watchClipboard
+      },
+      () => this.proactive.notifyClipboardError()
     )
   }
 
@@ -46,6 +57,7 @@ export class PetController {
 
     // Let her speak up on her own, with restraint (cooldowns live in the service).
     this.proactive.start()
+    this.clipboardWatcher.start() // self-gates; reads nothing unless opted in
   }
 
   /** Handle a user chat message from the chat window. */
@@ -128,6 +140,7 @@ export class PetController {
 
   dispose(): void {
     this.proactive.stop()
+    this.clipboardWatcher.stop()
     this.cursor.stop()
     this.environment.stop()
   }

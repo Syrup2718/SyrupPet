@@ -57,6 +57,8 @@
           <label class="row"><input id="followCursor" type="checkbox" /> 眼睛/表情跟著滑鼠反應</label>
           <label class="row"><input id="useEnvironmentContext" type="checkbox" /> 聊天時參考目前視窗/閒置狀態</label>
           <label class="row"><input id="proactive" type="checkbox" /> 主動陪伴（閒置/久坐/深夜時偶爾關心你）</label>
+          <label class="row"><input id="watchClipboard" type="checkbox" /> 偵測剪貼簿錯誤並主動提議幫忙（會輪詢剪貼簿）</label>
+          <p class="hint">⚠️ 預設關閉。開啟後小漿糖會持續讀取剪貼簿來判斷你是否複製了錯誤訊息；但只會「提議幫忙」，不會把內容送出，實際分析仍只在你按 Ctrl+Shift+C 時發生。</p>
           <label class="row"><input id="launchOnStartup" type="checkbox" /> 開機時自動啟動</label>
           <label>好奇反應距離 (px): <span id="proximityVal"></span>
             <input id="proximityRadius" type="range" min="60" max="400" step="10" />

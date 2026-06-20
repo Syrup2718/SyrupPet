@@ -113,6 +113,12 @@ export interface AppConfig {
     proximityRadius: number
     /** Whether the pet may speak up on its own (idle/overwork/late-night/app). */
     proactive: boolean
+    /**
+     * Opt-in (default false): poll the clipboard so the pet can *offer* to help
+     * when it looks like an error was copied. Even when on, the content is NOT
+     * sent to the LLM for the offer — only the manual hotkey reads + analyses it.
+     */
+    watchClipboard: boolean
   }
   launchOnStartup: boolean
 }
