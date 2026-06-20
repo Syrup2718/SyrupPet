@@ -18,6 +18,8 @@ export type Unsubscribe = () => void
 export interface SyrupApi {
   pet: {
     dragStart(): void
+    /** Move the pet window's top-left to a screen (DIP) coordinate during drag. */
+    dragMove(x: number, y: number): void
     dragEnd(): void
     setInteractive(interactive: boolean): void
     onSay(cb: (reply: PetReply) => void): Unsubscribe

@@ -12,6 +12,7 @@ import { getConfigStore } from '../config/configStore'
 export function registerIpc(windows: WindowManager, controller: PetController): void {
   // --- pet window control (fire-and-forget) ---
   ipcMain.on(IPC.petDragStart, () => windows.startPetDrag())
+  ipcMain.on(IPC.petDragMove, (_e, pos: { x: number; y: number }) => windows.movePet(pos.x, pos.y))
   ipcMain.on(IPC.petDragEnd, () => windows.endPetDrag())
   ipcMain.on(IPC.petSetInteractive, (_e, interactive: boolean) => windows.setPetInteractive(interactive))
 

@@ -17,7 +17,6 @@ export class WindowManager {
   settings: BrowserWindow | null = null
 
   private preloadPath: string
-  private dragTimer: NodeJS.Timeout | null = null
 
   constructor(preloadPath: string) {
     this.preloadPath = preloadPath
@@ -76,34 +75,22 @@ export class WindowManager {
   }
 
   /**
-   * Manual drag: the renderer signals drag-start; we capture the offset between
-   * the cursor and the window origin, then follow the global cursor until
-   * drag-end. This works even though the window is click-through elsewhere.
+   * Manual drag. The renderer drives it via movePet() using its own pointer
+   * events (screenX/clientX), which share the same DIP coordinate space as
+   * setPosition — so the grabbed point stays glued to the cursor with no creep
+   * or DPI slippage. startPetDrag/endPetDrag are just lifecycle markers.
    */
   startPetDrag(): void {
-    if (!this.pet || this.dragTimer) return
-    const cursor = screen.getCursorScreenPoint()
-    const [wx, wy] = this.pet.getPosition()
-    const offsetX = cursor.x - wx
-    const offsetY = cursor.y - wy
-    let lastX = cursor.x
-    let lastY = cursor.y
-    this.dragTimer = setInterval(() => {
-      if (!this.pet) return
-      const p = screen.getCursorScreenPoint()
-      // Only move when the cursor actually moved. Re-issuing setPosition every
-      // tick lets DPI rounding / 1px cursor jitter make the window creep on its
-      // own even while the cursor is held still.
-      if (p.x === lastX && p.y === lastY) return
-      lastX = p.x
-      lastY = p.y
-      this.pet.setPosition(p.x - offsetX, p.y - offsetY)
-    }, 16)
+    /* renderer-driven; nothing to set up in main */
+  }
+
+  /** Set the pet window's top-left to a screen (DIP) coordinate. */
+  movePet(x: number, y: number): void {
+    if (this.pet && !this.pet.isDestroyed()) this.pet.setPosition(Math.round(x), Math.round(y))
   }
 
   endPetDrag(): void {
-    if (this.dragTimer) clearInterval(this.dragTimer)
-    this.dragTimer = null
+    /* renderer-driven; nothing to tear down in main */
   }
 
   // ------------------------------------------------------------- chat window

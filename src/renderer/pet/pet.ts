@@ -282,18 +282,33 @@ function wireInteraction(): void {
     window.syrup.pet.setInteractive(isOverCharacter(e.clientX, e.clientY))
   })
 
-  let downX = 0
-  let downY = 0
+  // grabX/grabY = cursor offset within the window at grab time (client px).
+  // The frameless window's content origin is its top-left, so keeping this
+  // offset under the cursor = window top-left is (screenX - grabX, screenY - grabY).
+  let grabX = 0
+  let grabY = 0
+  let startScreenX = 0
+  let startScreenY = 0
   let dragging = false
 
   characterEl.addEventListener('mousedown', (e) => {
-    downX = e.clientX
-    downY = e.clientY
+    grabX = e.clientX
+    grabY = e.clientY
+    startScreenX = e.screenX
+    startScreenY = e.screenY
     dragging = false
     // Lock interactive for the whole drag so we always get the mouseup.
     window.syrup.pet.setInteractive(true)
     window.syrup.pet.dragStart()
     characterEl.classList.add('dragging')
+  })
+
+  window.addEventListener('mousemove', (e) => {
+    if (!characterEl.classList.contains('dragging')) return
+    // Use screen coords for the drag threshold: while the window follows the
+    // cursor, clientX stays ~constant, so it can't be used to detect movement.
+    if (Math.hypot(e.screenX - startScreenX, e.screenY - startScreenY) > 5) dragging = true
+    window.syrup.pet.dragMove(e.screenX - grabX, e.screenY - grabY)
   })
 
   window.addEventListener('mouseup', (e) => {
@@ -302,14 +317,8 @@ function wireInteraction(): void {
     window.syrup.pet.dragEnd()
     // Re-evaluate click-through now that the drag is over.
     window.syrup.pet.setInteractive(isOverCharacter(e.clientX, e.clientY))
-    const moved = Math.hypot(e.clientX - downX, e.clientY - downY)
+    const moved = Math.hypot(e.screenX - startScreenX, e.screenY - startScreenY)
     if (moved < 5 && !dragging) onClick()
-  })
-
-  window.addEventListener('mousemove', (e) => {
-    if (characterEl.classList.contains('dragging')) {
-      if (Math.hypot(e.clientX - downX, e.clientY - downY) > 5) dragging = true
-    }
   })
 }
 
