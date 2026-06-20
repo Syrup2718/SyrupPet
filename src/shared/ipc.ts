@@ -10,7 +10,6 @@
 export const IPC = {
   // --- pet window control (renderer -> main) ---
   petDragStart: 'pet:drag-start',
-  petDragMove: 'pet:drag-move', // { x, y } target window top-left (screen DIP)
   petDragEnd: 'pet:drag-end',
   petSetInteractive: 'pet:set-interactive',
 

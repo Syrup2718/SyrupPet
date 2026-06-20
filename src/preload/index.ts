@@ -12,7 +12,6 @@ import type { SyrupApi } from '@shared/api'
 const api: SyrupApi = {
   pet: {
     dragStart: () => ipcRenderer.send(IPC.petDragStart),
-    dragMove: (x, y) => ipcRenderer.send(IPC.petDragMove, { x, y }),
     dragEnd: () => ipcRenderer.send(IPC.petDragEnd),
     setInteractive: (interactive) => ipcRenderer.send(IPC.petSetInteractive, interactive),
     onSay: (cb) => listen(IPC.petSay, cb),

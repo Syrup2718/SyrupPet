@@ -282,43 +282,18 @@ function wireInteraction(): void {
     window.syrup.pet.setInteractive(isOverCharacter(e.clientX, e.clientY))
   })
 
-  // grabX/grabY = cursor offset within the window at grab time (client px).
-  // The frameless window's content origin is its top-left, so keeping this
-  // offset under the cursor = window top-left is (screenX - grabX, screenY - grabY).
-  let grabX = 0
-  let grabY = 0
-  let startScreenX = 0
-  let startScreenY = 0
-  let lastScreenX = 0
-  let lastScreenY = 0
+  let downX = 0
+  let downY = 0
   let dragging = false
 
   characterEl.addEventListener('mousedown', (e) => {
-    grabX = e.clientX
-    grabY = e.clientY
-    startScreenX = e.screenX
-    startScreenY = e.screenY
-    lastScreenX = e.screenX
-    lastScreenY = e.screenY
+    downX = e.clientX
+    downY = e.clientY
     dragging = false
     // Lock interactive for the whole drag so we always get the mouseup.
     window.syrup.pet.setInteractive(true)
     window.syrup.pet.dragStart()
     characterEl.classList.add('dragging')
-  })
-
-  window.addEventListener('mousemove', (e) => {
-    if (!characterEl.classList.contains('dragging')) return
-    // Moving the window makes it slide under a still cursor, which fires another
-    // mousemove with the SAME screen position. Acting on those re-triggers
-    // setPosition and creates a drift feedback loop — so ignore non-moves.
-    if (e.screenX === lastScreenX && e.screenY === lastScreenY) return
-    lastScreenX = e.screenX
-    lastScreenY = e.screenY
-    // Use screen coords for the drag threshold: while the window follows the
-    // cursor, clientX stays ~constant, so it can't be used to detect movement.
-    if (Math.hypot(e.screenX - startScreenX, e.screenY - startScreenY) > 5) dragging = true
-    window.syrup.pet.dragMove(e.screenX - grabX, e.screenY - grabY)
   })
 
   window.addEventListener('mouseup', (e) => {
@@ -327,8 +302,14 @@ function wireInteraction(): void {
     window.syrup.pet.dragEnd()
     // Re-evaluate click-through now that the drag is over.
     window.syrup.pet.setInteractive(isOverCharacter(e.clientX, e.clientY))
-    const moved = Math.hypot(e.screenX - startScreenX, e.screenY - startScreenY)
+    const moved = Math.hypot(e.clientX - downX, e.clientY - downY)
     if (moved < 5 && !dragging) onClick()
+  })
+
+  window.addEventListener('mousemove', (e) => {
+    if (characterEl.classList.contains('dragging')) {
+      if (Math.hypot(e.clientX - downX, e.clientY - downY) > 5) dragging = true
+    }
   })
 }
 
