@@ -289,6 +289,8 @@ function wireInteraction(): void {
   let grabY = 0
   let startScreenX = 0
   let startScreenY = 0
+  let lastScreenX = 0
+  let lastScreenY = 0
   let dragging = false
 
   characterEl.addEventListener('mousedown', (e) => {
@@ -296,6 +298,8 @@ function wireInteraction(): void {
     grabY = e.clientY
     startScreenX = e.screenX
     startScreenY = e.screenY
+    lastScreenX = e.screenX
+    lastScreenY = e.screenY
     dragging = false
     // Lock interactive for the whole drag so we always get the mouseup.
     window.syrup.pet.setInteractive(true)
@@ -305,6 +309,12 @@ function wireInteraction(): void {
 
   window.addEventListener('mousemove', (e) => {
     if (!characterEl.classList.contains('dragging')) return
+    // Moving the window makes it slide under a still cursor, which fires another
+    // mousemove with the SAME screen position. Acting on those re-triggers
+    // setPosition and creates a drift feedback loop — so ignore non-moves.
+    if (e.screenX === lastScreenX && e.screenY === lastScreenY) return
+    lastScreenX = e.screenX
+    lastScreenY = e.screenY
     // Use screen coords for the drag threshold: while the window follows the
     // cursor, clientX stays ~constant, so it can't be used to detect movement.
     if (Math.hypot(e.screenX - startScreenX, e.screenY - startScreenY) > 5) dragging = true
