@@ -94,6 +94,30 @@ class TaskStore {
     return this.tasks.filter((t) => t.status === 'todo')
   }
 
+  /** Everything, newest first — for the task-list window. */
+  all(): Task[] {
+    return [...this.tasks].sort((a, b) => b.createdAt - a.createdAt)
+  }
+
+  /** Complete by exact id (from the UI). */
+  completeId(id: string): Task | null {
+    const t = this.tasks.find((x) => x.id === id && x.status === 'todo')
+    if (!t) return null
+    t.status = 'done'
+    t.completedAt = Date.now()
+    this.persist()
+    return t
+  }
+
+  /** Remove by exact id (from the UI). */
+  removeId(id: string): boolean {
+    const before = this.tasks.length
+    this.tasks = this.tasks.filter((x) => x.id !== id)
+    if (this.tasks.length === before) return false
+    this.persist()
+    return true
+  }
+
   /** Open tasks whose due time has passed and that haven't been reminded yet. */
   listDue(now: number): Task[] {
     return this.tasks.filter(

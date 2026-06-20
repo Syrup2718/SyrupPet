@@ -4,6 +4,7 @@ import trayIconPath from '../../../../resources/tray.png?asset'
 
 export interface TrayHandlers {
   onToggleChat: () => void
+  onOpenTasks: () => void
   onTogglePet: () => void
   onOpenSettings: () => void
   onTestProactive: () => void
@@ -24,6 +25,7 @@ export class TrayService {
     this.tray.setContextMenu(
       Menu.buildFromTemplate([
         { label: '💬 開啟聊天 (Chat)', click: handlers.onToggleChat },
+        { label: '📋 代辦清單', click: handlers.onOpenTasks },
         { label: '👀 顯示/隱藏桌寵', click: handlers.onTogglePet },
         { type: 'separator' },
         { label: '⚙️  設定 (Settings)', click: handlers.onOpenSettings },

@@ -51,6 +51,7 @@ function bootstrap(): void {
 
   tray.create({
     onToggleChat: () => windows.toggleChat(),
+    onOpenTasks: () => windows.openTasks(),
     onTogglePet: () => windows.togglePet(),
     onOpenSettings: () => windows.openSettings(),
     onTestProactive: () => controller.testProactive(),

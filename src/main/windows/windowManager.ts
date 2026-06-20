@@ -1,10 +1,17 @@
 import { BrowserWindow, screen } from 'electron'
 import { join } from 'node:path'
+import { IPC } from '@shared/ipc'
 import { loadRenderer } from './loadRenderer'
 import appIconPath from '../../../resources/icon.png?asset'
 
 const PET_WIDTH = 280
 const PET_HEIGHT = 440
+
+const AUX_TITLES = {
+  chat: '小漿糖 — Chat',
+  settings: '小漿糖 — 設定',
+  tasks: '小漿糖 — 代辦'
+} as const
 
 /**
  * Owns the three windows and the pet-specific window behaviours that can only
@@ -15,6 +22,7 @@ export class WindowManager {
   pet: BrowserWindow | null = null
   chat: BrowserWindow | null = null
   settings: BrowserWindow | null = null
+  tasks: BrowserWindow | null = null
 
   private preloadPath: string
   private dragTimer: NodeJS.Timeout | null = null
@@ -135,7 +143,21 @@ export class WindowManager {
     this.settings = this.createAuxWindow('settings', 460, 600)
   }
 
-  private createAuxWindow(entry: 'chat' | 'settings', width: number, height: number): BrowserWindow {
+  // ------------------------------------------------------------ tasks window
+  openTasks(): void {
+    if (this.tasks && !this.tasks.isDestroyed()) {
+      this.tasks.show()
+      this.tasks.focus()
+      return
+    }
+    this.tasks = this.createAuxWindow('tasks', 400, 560)
+  }
+
+  broadcastTasksUpdated(): void {
+    if (this.tasks && !this.tasks.isDestroyed()) this.tasks.webContents.send(IPC.tasksUpdated)
+  }
+
+  private createAuxWindow(entry: 'chat' | 'settings' | 'tasks', width: number, height: number): BrowserWindow {
     const { workArea } = screen.getPrimaryDisplay()
     const win = new BrowserWindow({
       width,
@@ -148,7 +170,7 @@ export class WindowManager {
       skipTaskbar: false,
       alwaysOnTop: true,
       icon: appIconPath,
-      title: entry === 'chat' ? '小漿糖 — Chat' : '小漿糖 — 設定',
+      title: AUX_TITLES[entry],
       webPreferences: {
         preload: this.preloadPath,
         contextIsolation: true,
@@ -156,8 +178,11 @@ export class WindowManager {
       }
     })
     loadRenderer(win, entry)
-    if (entry === 'chat') win.on('closed', () => (this.chat = null))
-    else win.on('closed', () => (this.settings = null))
+    win.on('closed', () => {
+      if (entry === 'chat') this.chat = null
+      else if (entry === 'settings') this.settings = null
+      else this.tasks = null
+    })
     return win
   }
 

@@ -6,7 +6,7 @@ import type { BrowserWindow } from 'electron'
  * In dev, electron-vite serves the renderer from a dev server and exposes its
  * URL via ELECTRON_RENDERER_URL. In prod we load the built HTML from disk.
  */
-export function loadRenderer(win: BrowserWindow, entry: 'pet' | 'chat' | 'settings'): void {
+export function loadRenderer(win: BrowserWindow, entry: 'pet' | 'chat' | 'settings' | 'tasks'): void {
   const devUrl = process.env['ELECTRON_RENDERER_URL']
   if (devUrl) {
     void win.loadURL(`${devUrl}/${entry}/index.html`)

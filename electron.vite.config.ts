@@ -29,7 +29,8 @@ export default defineConfig({
         input: {
           pet: resolve(__dirname, 'src/renderer/pet/index.html'),
           chat: resolve(__dirname, 'src/renderer/chat/index.html'),
-          settings: resolve(__dirname, 'src/renderer/settings/index.html')
+          settings: resolve(__dirname, 'src/renderer/settings/index.html'),
+          tasks: resolve(__dirname, 'src/renderer/tasks/index.html')
         }
       }
     }

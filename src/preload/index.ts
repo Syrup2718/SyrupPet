@@ -29,6 +29,13 @@ const api: SyrupApi = {
     get: (): Promise<AppConfig> => ipcRenderer.invoke(IPC.configGet),
     set: (patch: Partial<AppConfig>): Promise<AppConfig> => ipcRenderer.invoke(IPC.configSet, patch)
   },
+  tasks: {
+    list: () => ipcRenderer.invoke(IPC.tasksList),
+    add: (title: string, dueMinutes?: number) => ipcRenderer.invoke(IPC.tasksAdd, { title, dueMinutes }),
+    complete: (id: string) => ipcRenderer.invoke(IPC.tasksComplete, id),
+    remove: (id: string) => ipcRenderer.invoke(IPC.tasksRemove, id),
+    onUpdated: (cb) => listen(IPC.tasksUpdated, cb)
+  },
   window: {
     close: () => ipcRenderer.send(IPC.windowClose)
   }

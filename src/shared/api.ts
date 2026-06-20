@@ -4,7 +4,8 @@ import type {
   CursorPoint,
   Emotion,
   EnvironmentSnapshot,
-  PetReply
+  PetReply,
+  Task
 } from './types'
 
 /** Unsubscribe handle returned by every `on*` listener. */
@@ -34,6 +35,14 @@ export interface SyrupApi {
   config: {
     get(): Promise<AppConfig>
     set(patch: Partial<AppConfig>): Promise<AppConfig>
+  }
+  tasks: {
+    list(): Promise<Task[]>
+    add(title: string, dueMinutes?: number): Promise<Task>
+    complete(id: string): Promise<void>
+    remove(id: string): Promise<void>
+    /** Fired when the list changed elsewhere (e.g. via chat) — refetch. */
+    onUpdated(cb: () => void): Unsubscribe
   }
   window: {
     close(): void

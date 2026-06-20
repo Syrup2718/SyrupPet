@@ -76,6 +76,7 @@ export class PetController {
       else if (op.op === 'done') store.complete(op.title)
       else if (op.op === 'remove') store.remove(op.title)
     }
+    this.windows.broadcastTasksUpdated() // refresh the task window if it's open
   }
 
   /** Fire a gentle reminder for the first task whose due time has passed. */

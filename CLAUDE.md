@@ -30,7 +30,7 @@ npm run dist       # electron-builder 產生安裝檔 -> dist/
   - `services/tray/trayService.ts`：托盤圖示用 `resources/tray.png`(電腦透過 electron-vite `?asset` 載入)
 - `resources/` — 主程序用的靜態資產(用 `import x from '...?asset'` 載入,型別宣告在 `src/main/env.d.ts`):`tray.png`(托盤)、`icon.png`(聊天/設定視窗工作列圖示)。`build/icon.ico` 是 electron-builder 的安裝檔/exe 圖示。圖片暫存於 repo 根的 `syrup.png`/`*.png` 已被 `.gitignore` 排除。
 - `src/preload/index.ts`：實作 `SyrupApi`,透過 contextBridge 暴露為 `window.syrup`
-- `src/renderer/{pet,chat,settings}/`：三個視窗。`pet/` 是角色本體（互動、眼睛追滑鼠、泡泡、動畫）
+- `src/renderer/{pet,chat,settings,tasks}/`：四個視窗。`pet/` 是角色本體（互動、眼睛追滑鼠、泡泡、動畫）;`tasks/` 是代辦清單視窗。新增視窗要同步 `electron.vite.config.ts` 的 input、`loadRenderer` 的 entry 型別、`windowManager.createAuxWindow`。
 - `src/renderer/public/characters/<pack>/`：角色素材包,每包一個資料夾,用 `manifest.json` 的 `mode` 決定怎麼渲染:
   - `svg`：每種情緒一個 `<emotion>.svg`,內含 `.pupil` 群組 → 眼睛精準追滑鼠（內建 `default`、手繪 `chibi`）
   - `single`：單張靜態圖（`image` 欄位）。情緒用 emoji 徽章 + 整體濾鏡/傾斜近似,眼睛不追

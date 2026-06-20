@@ -21,6 +21,12 @@ export const IPC = {
   configGet: 'config:get',
   configSet: 'config:set',
 
+  // --- tasks (renderer -> main, invoke) ---
+  tasksList: 'tasks:list',
+  tasksAdd: 'tasks:add',
+  tasksComplete: 'tasks:complete',
+  tasksRemove: 'tasks:remove',
+
   // --- windows ---
   windowClose: 'window:close',
 
@@ -30,7 +36,8 @@ export const IPC = {
   cursorMove: 'cursor:move', // { x, y } global cursor for eye-follow
   environmentUpdate: 'environment:update', // EnvironmentSnapshot
   chatReply: 'chat:reply', // { request, reply } pushed to chat window
-  chatThinking: 'chat:thinking' // boolean: show typing indicator
+  chatThinking: 'chat:thinking', // boolean: show typing indicator
+  tasksUpdated: 'tasks:updated' // signal the task window to refetch
 } as const
 
 export type IpcChannel = (typeof IPC)[keyof typeof IPC]

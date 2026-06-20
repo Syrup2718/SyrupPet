@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline';" />
+    <title>小漿糖 — 代辦</title>
+    <link rel="stylesheet" href="./tasks.css" />
+  </head>
+  <body>
+    <div id="card">
+      <header id="titlebar">
+        <span class="title">📋 代辦清單</span>
+        <button id="close-btn" title="關閉">✕</button>
+      </header>
+
+      <div id="add-row">
+        <input id="new-title" type="text" placeholder="新增代辦… (Enter)" spellcheck="false" />
+        <input id="new-due" type="number" min="0" placeholder="幾分後提醒" />
+        <button id="add-btn" title="新增">＋</button>
+      </div>
+
+      <main id="list"></main>
+
+      <footer><span id="count"></span></footer>
+    </div>
+    <script type="module" src="./tasks.ts"></script>
+  </body>
+</html>

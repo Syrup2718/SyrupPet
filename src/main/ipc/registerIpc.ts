@@ -4,6 +4,7 @@ import type { AppConfig } from '@shared/types'
 import type { WindowManager } from '../windows/windowManager'
 import type { PetController } from '../petController'
 import { getConfigStore } from '../config/configStore'
+import { getTaskStore } from '../services/tasks/taskStore'
 
 /**
  * Wires every renderer<->main channel. Kept in one place so the IPC surface is
@@ -27,6 +28,22 @@ export function registerIpc(windows: WindowManager, controller: PetController): 
     // Switching character pack takes effect immediately by reloading the pet.
     if (patch.character) windows.reloadPet()
     return updated
+  })
+
+  // --- tasks ---
+  ipcMain.handle(IPC.tasksList, () => getTaskStore().all())
+  ipcMain.handle(IPC.tasksAdd, (_e, p: { title: string; dueMinutes?: number }) => {
+    const task = getTaskStore().add(p.title, p.dueMinutes, 'manual')
+    windows.broadcastTasksUpdated()
+    return task
+  })
+  ipcMain.handle(IPC.tasksComplete, (_e, id: string) => {
+    getTaskStore().completeId(id)
+    windows.broadcastTasksUpdated()
+  })
+  ipcMain.handle(IPC.tasksRemove, (_e, id: string) => {
+    getTaskStore().removeId(id)
+    windows.broadcastTasksUpdated()
   })
 
   // --- generic window close ---
