@@ -54,7 +54,10 @@ export function buildUserPrompt(req: ChatRequest): string {
       )
       break
     case 'proactive':
-      blocks.push('（這是你主動關心使用者，根據上面的背景資訊說一句自然、貼心或俏皮的話。）', req.content)
+      blocks.push(
+        '（這是你「主動」開口，不是在回答問題。根據下面的情況，用小漿糖的口吻說一句自然、簡短、有節制的話——像朋友順口關心一下，不要太黏、不要說教、不要每次都問問題。）',
+        req.content
+      )
       break
     case 'chat':
     default:

@@ -92,7 +92,8 @@ export const DEFAULT_CONFIG: AppConfig = {
   behaviour: {
     followCursor: true,
     useEnvironmentContext: true,
-    proximityRadius: 180
+    proximityRadius: 180,
+    proactive: true
   },
   launchOnStartup: false
 }

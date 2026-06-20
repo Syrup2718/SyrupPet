@@ -111,6 +111,8 @@ export interface AppConfig {
     useEnvironmentContext: boolean
     /** Pixels: how close the cursor must be to trigger the "curious" reaction. */
     proximityRadius: number
+    /** Whether the pet may speak up on its own (idle/overwork/late-night/app). */
+    proactive: boolean
   }
   launchOnStartup: boolean
 }

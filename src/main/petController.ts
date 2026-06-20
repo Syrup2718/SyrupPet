@@ -4,6 +4,8 @@ import { WindowManager } from './windows/windowManager'
 import { LLMService } from './services/llm/LLMService'
 import { EnvironmentService } from './services/environment/environmentService'
 import { CursorTracker } from './services/environment/cursorTracker'
+import { ProactiveService } from './services/proactive/proactiveService'
+import type { ProactiveHint } from './services/proactive/proactiveService'
 import { readClipboardText } from './services/clipboard/clipboardService'
 import { getConfigStore } from './config/configStore'
 
@@ -14,13 +16,20 @@ import { getConfigStore } from './config/configStore'
  */
 export class PetController {
   private inFlight: AbortController | null = null
+  private proactive: ProactiveService
 
   constructor(
     private windows: WindowManager,
     private llm: LLMService,
     private environment: EnvironmentService,
     private cursor: CursorTracker
-  ) {}
+  ) {
+    this.proactive = new ProactiveService(
+      this.environment,
+      (hint) => void this.runProactive(hint),
+      () => getConfigStore().get().behaviour.proactive
+    )
+  }
 
   start(): void {
     const config = getConfigStore().get()
@@ -34,6 +43,9 @@ export class PetController {
     // Ambient awareness (kept local; only used as context on explicit chat).
     this.environment.on('update', (snap) => this.windows.sendToPet(IPC.environmentUpdate, snap))
     this.environment.start()
+
+    // Let her speak up on her own, with restraint (cooldowns live in the service).
+    this.proactive.start()
   }
 
   /** Handle a user chat message from the chat window. */
@@ -55,6 +67,29 @@ export class PetController {
     }
     this.windows.showChat()
     return this.run({ intent: 'clipboard', content: text })
+  }
+
+  /**
+   * Proactive path: 小漿糖 speaks up on her own. Deliberately quiet — no
+   * "thinking" indicator, and any LLM/network failure is swallowed (a proactive
+   * line that errors out would just be annoying). Only the pet bubble + chat get
+   * the reply if it succeeds.
+   */
+  private async runProactive(hint: ProactiveHint): Promise<void> {
+    const config = getConfigStore().get()
+    if (!config.behaviour.proactive) return
+    // Don't talk over an in-flight user request.
+    if (this.inFlight) return
+
+    const context = config.behaviour.useEnvironmentContext
+      ? await this.environment.getSnapshot()
+      : undefined
+    try {
+      const reply = await this.llm.reply({ intent: 'proactive', content: hint.note, context })
+      this.emitReply({ intent: 'proactive', content: hint.note }, reply)
+    } catch (err) {
+      console.warn('[proactive] skipped:', err instanceof Error ? err.message : String(err))
+    }
   }
 
   /** Shared path: call the LLM, broadcast thinking state + result. */
@@ -92,6 +127,7 @@ export class PetController {
   }
 
   dispose(): void {
+    this.proactive.stop()
     this.cursor.stop()
     this.environment.stop()
   }
