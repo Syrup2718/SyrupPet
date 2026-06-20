@@ -16,7 +16,7 @@ npm run dist       # electron-builder 產生安裝檔 -> dist/
 
 ## 架構地圖
 - `src/shared/` — **契約集中地**，main/preload/renderer 共用。改情緒、動作、回覆格式、IPC、設定型別都從這裡開始。
-  - `types.ts`：`Emotion`、`Action`、`PetReply = {text, emotion, action}`、`EnvironmentSnapshot`、`AppConfig`
+  - `types.ts`：`Emotion`(10 種:normal/happy/confused/angry/thinking/sleepy/shy/excited/love/sad)、`Action`、`PetReply = {text, emotion, action}`、`EnvironmentSnapshot`、`AppConfig`
   - `ipc.ts`：所有 IPC channel 名稱（唯一來源）
   - `api.ts`：`window.syrup` 介面（**electron-free**，所以 renderer 能對著它做型別檢查）
 - `src/main/`
@@ -26,12 +26,14 @@ npm run dist       # electron-builder 產生安裝檔 -> dist/
   - `services/environment/`：前景視窗(`foregroundWindow.ts`,PowerShell+Win32)、閒置(`powerMonitor`)、全域游標
   - `services/`：`clipboard`、`hotkeys`、`tray`；`config/`：存到 `%APPDATA%\syrup-pet\config.json`
   - `windows/windowManager.ts`：透明/無邊框/置頂、拖曳、click-through
+  - `services/tray/trayService.ts`：托盤圖示用 `resources/tray.png`(電腦透過 electron-vite `?asset` 載入)
+- `resources/` — 主程序用的靜態資產(用 `import x from '...?asset'` 載入,型別宣告在 `src/main/env.d.ts`):`tray.png`(托盤)、`icon.png`(聊天/設定視窗工作列圖示)。`build/icon.ico` 是 electron-builder 的安裝檔/exe 圖示。圖片暫存於 repo 根的 `syrup.png`/`*.png` 已被 `.gitignore` 排除。
 - `src/preload/index.ts`：實作 `SyrupApi`,透過 contextBridge 暴露為 `window.syrup`
 - `src/renderer/{pet,chat,settings}/`：三個視窗。`pet/` 是角色本體（互動、眼睛追滑鼠、泡泡、動畫）
 - `src/renderer/public/characters/<pack>/`：角色素材包,每包一個資料夾,用 `manifest.json` 的 `mode` 決定怎麼渲染:
   - `svg`：每種情緒一個 `<emotion>.svg`,內含 `.pupil` 群組 → 眼睛精準追滑鼠（內建 `default`、手繪 `chibi`）
   - `single`：單張靜態圖（`image` 欄位）。情緒用 emoji 徽章 + 整體濾鏡/傾斜近似,眼睛不追
-  - `multi`：每種情緒一張圖（`images` 對應表,缺省 `<emotion>.png`）→ 真正換表情圖。眼睛用整體微傾近似（預設 `custom`,六張去背 Q版插畫）
+  - `multi`：每種情緒一張圖（`images` 對應表,缺省 `<emotion>.png`）→ 真正換表情圖。眼睛用整體微傾近似（預設 `custom`,10 張去背 Q版插畫）
   - 三種模式都在 `renderer/pet/pet.ts` 的 `CharacterRenderer` 策略類別實作；`buildRenderer()` 依 manifest 分流,載入失敗一律回退 `default` SVG
   - 切換角色:設定頁「🎨 角色外觀」下拉 → 存進 `config.character` → `registerIpc` 偵測到 `patch.character` 就呼叫 `windows.reloadPet()` 即時重載
 
@@ -43,5 +45,8 @@ npm run dist       # electron-builder 產生安裝檔 -> dist/
 - **跨層 import**：renderer/preload 只能 `import type` 從 `@shared/*`,不要 import `src/main/*`（會把 electron/node 型別帶進 web typecheck）。
 - **新增/換角色**：在 `characters/<pack>/` 放素材 + `manifest.json`,然後到設定下拉加一個 `<option value="<pack>">`。圖片暫存檔丟 repo 根目錄轉移用,記得 `.gitignore` 有排除（正本一律放在素材包資料夾）。
 
+## 已知問題
+- **拖曳在縮放螢幕(125%/150%)會輕微滑點**：目前用主程序 `getCursorScreenPoint` 跟隨 + `setPosition`。已修掉「漂走/放不掉」「靜止自爬」,但 DPI 縮放下拖遠時抓點會偏一點。試過 renderer `screenX` 改寫(偏更多)、DIP 位移÷dpr(未驗證)皆未定案。最穩的後備:改用 `-webkit-app-region: drag`(OS 原生拖曳,完美黏住),代價是「點擊戳一下」反應要換觸發方式。
+
 ## 收尾流程
-完成一個工作段落後,主動 `git add` → `commit`（繁中訊息 + Co-Authored-By）→ `push origin main`。維護好 `.gitignore`（已排除 `node_modules/`、`out/`、`dist/`、`*.tsbuildinfo`、`.env*`、`.claude/settings.local.json`）。
+完成一個工作段落後,主動 `git add` → `commit`（繁中訊息 + Co-Authored-By）→ `push origin main`。維護好 `.gitignore`（已排除 `node_modules/`、`out/`、`dist/`、`*.tsbuildinfo`、`.env*`、`.claude/settings.local.json`、根目錄轉移用圖片）。

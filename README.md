@@ -17,7 +17,7 @@
 | 5 | 快捷鍵聊天 | `Ctrl+Shift+Space` 叫出/收起聊天框 |
 | 6 | LLM 串接 | OpenAI / DeepSeek / Ollama / 任何 OpenAI 相容端點 |
 | 7 | 結構化回覆 | LLM 回傳 `{ text, emotion, action }`，驅動表情與動作 |
-| 8 | 6 種情緒 | normal / happy / confused / angry / thinking / sleepy |
+| 8 | 10 種情緒 | normal / happy / confused / angry / thinking / sleepy / shy / excited / love / sad |
 | 9 | 桌面對話泡泡 | 回覆會浮在角色頭上，不只在聊天視窗 |
 | 10 | 環境感知 | 前景程式、視窗標題、閒置秒數、是否在活動（**無 keylogger**） |
 | 11 | 剪貼簿分析 | `Ctrl+Shift+C` **主動**讓桌寵讀剪貼簿並用 LLM 分析（不自動偷看） |
@@ -94,7 +94,7 @@ src/
 |------|------|------|-----------|----------|
 | `svg` | 每種情緒一個 `<emotion>.svg` | ✅ 向量換臉 | ✅ 精準（`.pupil` 位移） | `default`（史萊姆）、`chibi`（手繪 Q 版） |
 | `single` | 單張靜態圖 | emoji 徽章 + 濾鏡近似 | 整體微傾近似 | — |
-| `multi` | 每種情緒一張圖 | ✅ 真正換圖 | 整體微傾近似 | `custom`（六張去背 Q 版插畫，**預設**） |
+| `multi` | 每種情緒一張圖 | ✅ 真正換圖 | 整體微傾近似 | `custom`（10 張去背 Q 版插畫，**預設**） |
 
 換角色：**系統托盤 →「⚙️ 設定」→「🎨 角色外觀」** 下拉即時切換，無需重啟。
 自製角色：在 `characters/` 新增一包 + `manifest.json`，再到設定下拉加一個選項即可（情緒/動作的契約共用，不必動其他程式）。
