@@ -15,6 +15,7 @@ const api: SyrupApi = {
     dragEnd: () => ipcRenderer.send(IPC.petDragEnd),
     setInteractive: (interactive) => ipcRenderer.send(IPC.petSetInteractive, interactive),
     poke: () => ipcRenderer.send(IPC.petPoke),
+    sulk: () => ipcRenderer.send(IPC.petSulk),
     onSay: (cb) => listen(IPC.petSay, cb),
     onEmotion: (cb) => listen(IPC.petEmotion, cb),
     onCursor: (cb) => listen(IPC.cursorMove, cb),

@@ -72,6 +72,7 @@ const POKE_THINKING: PokeReaction[] = [
 ]
 
 const POKE_CHAIN_MS = 1600 // pokes within this gap escalate; a pause resets to friendly
+const POKE_RAGE_QUIT = 10 // poke this many in a row and she hides in a huff
 const LLM_POKE_COOLDOWN = 3 * 60_000 // occasional improvised line, rate-limited
 let pokeCount = 0
 let lastPokeAt = 0
@@ -403,6 +404,19 @@ function onClick(): void {
   const now = Date.now()
   pokeCount = now - lastPokeAt < POKE_CHAIN_MS ? pokeCount + 1 : 1
   lastPokeAt = now
+
+  // Last straw: poked way too many times in a row -> she storms off.
+  if (pokeCount >= POKE_RAGE_QUIT) {
+    playClick()
+    playPokeAnim(true)
+    setEmotion('angry')
+    showBubble('哼!我不理你了啦! ( ›´ω`‹ )', 1500)
+    busyUntil = now + 2000
+    pokeCount = 0
+    lastPokeAt = 0
+    window.setTimeout(() => window.syrup.pet.sulk(), 950) // let the line show first
+    return
+  }
 
   const reaction = pickPokeReaction(pokeCount, now)
   playClick()

@@ -26,6 +26,7 @@ export class WindowManager {
 
   private preloadPath: string
   private dragTimer: NodeJS.Timeout | null = null
+  private sulkTimer: NodeJS.Timeout | null = null
 
   constructor(preloadPath: string) {
     this.preloadPath = preloadPath
@@ -66,6 +67,23 @@ export class WindowManager {
   /** Reload the pet renderer (e.g. after the character pack changed). */
   reloadPet(): void {
     if (this.pet && !this.pet.isDestroyed()) this.pet.webContents.reload()
+  }
+
+  /** Poked too much: she storms off (hides), then sulks back ~25s later. */
+  sulkPet(): void {
+    if (!this.pet || this.pet.isDestroyed()) return
+    this.pet.hide()
+    if (this.sulkTimer) clearTimeout(this.sulkTimer)
+    this.sulkTimer = setTimeout(() => {
+      this.sulkTimer = null
+      if (!this.pet || this.pet.isDestroyed()) return
+      this.pet.show()
+      this.pet.webContents.send(IPC.petSay, {
+        text: '…哼,我回來了啦。下次別戳那麼用力。',
+        emotion: 'confused',
+        action: 'idle'
+      })
+    }, 25_000)
   }
 
   togglePet(): void {

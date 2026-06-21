@@ -13,6 +13,7 @@ export const IPC = {
   petDragEnd: 'pet:drag-end',
   petSetInteractive: 'pet:set-interactive',
   petPoke: 'pet:poke', // user poked her — maybe improvise an LLM line
+  petSulk: 'pet:sulk', // poked too much — storm off (hide), come back later
 
   // --- chat / LLM (renderer -> main, invoke) ---
   chatSend: 'chat:send',
