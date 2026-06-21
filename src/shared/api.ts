@@ -22,6 +22,8 @@ export interface SyrupApi {
     dragStart(): void
     dragEnd(): void
     setInteractive(interactive: boolean): void
+    /** Signal that the user poked her (left-click) — may trigger an LLM line. */
+    poke(): void
     onSay(cb: (reply: PetReply) => void): Unsubscribe
     onEmotion(cb: (emotion: Emotion | string) => void): Unsubscribe
     onCursor(cb: (p: CursorPoint) => void): Unsubscribe

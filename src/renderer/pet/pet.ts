@@ -21,8 +21,67 @@ const EMOTION_EMOJI: Record<Emotion, string> = {
   sad: '🥺'
 }
 
-/** Random idle lines for the click reaction (no LLM call needed). */
-const CLICK_LINES = ['嗨嗨~', '在的在的!', '欸嘿~', '需要我嗎?', '戳我幹嘛啦 >//<', '今天也要加油喔!']
+/** A local poke reaction: a line, the expression, and whether it's a "mad" wobble. */
+interface PokeReaction {
+  line: string
+  emotion: Emotion
+  mad?: boolean
+}
+
+// Escalation tiers — poke faster/more and she gets annoyed, then angry.
+const POKE_HAPPY: PokeReaction[] = [
+  { line: '嗨嗨~', emotion: 'happy' },
+  { line: '在的在的!', emotion: 'happy' },
+  { line: '欸嘿~ 戳到我了', emotion: 'happy' },
+  { line: '需要我嗎?', emotion: 'happy' },
+  { line: '今天也要加油喔!', emotion: 'happy' },
+  { line: '呼呀~ 癢癢的', emotion: 'happy' }
+]
+const POKE_ANNOYED: PokeReaction[] = [
+  { line: '欸…幹嘛啦~', emotion: 'confused' },
+  { line: '又戳?', emotion: 'confused' },
+  { line: '你很閒喔 >_<', emotion: 'confused' },
+  { line: '別鬧啦~', emotion: 'confused' }
+]
+const POKE_ANNOYED2: PokeReaction[] = [
+  { line: '真的很煩欸 >_<', emotion: 'confused', mad: true },
+  { line: '不要再戳了啦!', emotion: 'angry', mad: true },
+  { line: '我快生氣囉…', emotion: 'angry', mad: true }
+]
+const POKE_ANGRY: PokeReaction[] = [
+  { line: '不要一直戳我啦 >//<', emotion: 'angry', mad: true },
+  { line: '哼!我生氣了!', emotion: 'angry', mad: true },
+  { line: '再戳我就不理你了!', emotion: 'angry', mad: true },
+  { line: '(鼓起臉頰)…', emotion: 'angry', mad: true }
+]
+// State-aware reactions for a calm, single poke (override the happy default).
+const POKE_SLEEPY: PokeReaction[] = [
+  { line: '唔…想睡了啦~', emotion: 'sleepy' },
+  { line: '好睏…別戳我惹', emotion: 'sleepy' },
+  { line: '再讓我瞇一下下…', emotion: 'sleepy' }
+]
+const POKE_COMFORT: PokeReaction[] = [
+  { line: '謝謝你…我好一點了', emotion: 'happy' },
+  { line: '摸摸~ 有你在感覺好多了', emotion: 'love' },
+  { line: '嗯…陪我一下下', emotion: 'happy' }
+]
+const POKE_THINKING: PokeReaction[] = [
+  { line: '等一下啦,我在想…', emotion: 'thinking' },
+  { line: '噓~ 思考中', emotion: 'thinking' },
+  { line: '想到一半被你打斷了啦', emotion: 'confused' }
+]
+
+const POKE_CHAIN_MS = 1600 // pokes within this gap escalate; a pause resets to friendly
+const LLM_POKE_COOLDOWN = 3 * 60_000 // occasional improvised line, rate-limited
+let pokeCount = 0
+let lastPokeAt = 0
+let lastLlmPokeAt = 0
+let moodEmotion: Emotion = 'normal' // her last genuinely-expressed mood
+let moodUntil = 0
+
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
 
 /**
  * A character pack's manifest. Optional file `manifest.json` inside the pack
@@ -256,6 +315,8 @@ function applyReply(reply: PetReply): void {
   playAction(reply.action)
   showBubble(reply.text)
   playEmotion(reply.emotion) // a short cue when she speaks (not on idle emotion flips)
+  moodEmotion = reply.emotion // remember her mood so a poke can react to it
+  moodUntil = Date.now() + 60_000
   busyUntil = Date.now() + 6500
 }
 
@@ -287,6 +348,13 @@ function wireInteraction(): void {
   document.addEventListener('mousemove', (e) => {
     if (characterEl.classList.contains('dragging')) return
     window.syrup.pet.setInteractive(isOverCharacter(e.clientX, e.clientY))
+  })
+
+  // Drop the one-shot poke animation when it finishes so breathing resumes.
+  characterEl.addEventListener('animationend', (e) => {
+    if (e.animationName === 'squish' || e.animationName === 'pokeShake') {
+      characterEl.classList.remove('poke', 'poke-mad')
+    }
   })
 
   let downX = 0
@@ -332,12 +400,44 @@ function isOverCharacter(clientX: number, clientY: number): boolean {
 }
 
 function onClick(): void {
-  const line = CLICK_LINES[Math.floor(Math.random() * CLICK_LINES.length)]
+  const now = Date.now()
+  pokeCount = now - lastPokeAt < POKE_CHAIN_MS ? pokeCount + 1 : 1
+  lastPokeAt = now
+
+  const reaction = pickPokeReaction(pokeCount, now)
   playClick()
-  setEmotion('happy')
-  playAction('jump')
-  showBubble(line, 2500)
-  busyUntil = Date.now() + 2600
+  playPokeAnim(reaction.mad === true)
+  setEmotion(reaction.emotion)
+  showBubble(reaction.line, 2400)
+  busyUntil = now + 2500
+
+  // Occasionally let the LLM improvise a fresh, context-aware line — only on a
+  // calm single poke, and rate-limited, so it stays a surprise (not API spam).
+  if (pokeCount <= 2 && now - lastLlmPokeAt > LLM_POKE_COOLDOWN) {
+    lastLlmPokeAt = now
+    window.syrup.pet.poke()
+  }
+}
+
+/** First few pokes react to her mood/time; rapid repeats escalate to anger. */
+function pickPokeReaction(count: number, now: number): PokeReaction {
+  if (count <= 2) {
+    const hour = new Date().getHours()
+    const mood = now < moodUntil ? moodEmotion : 'normal'
+    if (mood === 'sad') return pick(POKE_COMFORT)
+    if (mood === 'sleepy' || hour < 6) return pick(POKE_SLEEPY)
+    if (mood === 'thinking') return pick(POKE_THINKING)
+    return pick(POKE_HAPPY)
+  }
+  if (count >= 7) return pick(POKE_ANGRY)
+  if (count >= 5) return pick(POKE_ANNOYED2)
+  return pick(POKE_ANNOYED)
+}
+
+function playPokeAnim(mad: boolean): void {
+  characterEl.classList.remove('poke', 'poke-mad', 'act-jump', 'act-nod', 'act-shake', 'act-wave', 'act-sleep')
+  void characterEl.offsetWidth // restart the animation
+  characterEl.classList.add(mad ? 'poke-mad' : 'poke')
 }
 
 // --------------------------------------------------------------------- ipc

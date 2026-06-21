@@ -23,6 +23,7 @@ export class PetController {
   private proactive: ProactiveService
   private clipboardWatcher: ClipboardWatcher
   private taskTimer: NodeJS.Timeout | null = null
+  private lastPokeLlmAt = 0
 
   constructor(
     private windows: WindowManager,
@@ -114,6 +115,25 @@ export class PetController {
       ? await this.environment.getSnapshot()
       : undefined
     return this.run({ intent: 'chat', content: message, context })
+  }
+
+  /**
+   * The user poked her. The renderer already played a snappy local reaction;
+   * occasionally we follow up with a fresh, context/memory-aware LLM line. Rate
+   * limited and quiet (failures are swallowed) so it stays a nice surprise.
+   */
+  handlePoke(): void {
+    const now = Date.now()
+    if (now - this.lastPokeLlmAt < 3 * 60_000) return // backstop the renderer's own limit
+    if (this.inFlight) return
+    this.lastPokeLlmAt = now
+    void this.runProactive(
+      {
+        trigger: 'poke',
+        note: '使用者戳了戳你、想找你玩。用小漿糖的口吻俏皮、簡短地回應一句（可以參考你記得的事，或他現在在用什麼程式）。'
+      },
+      true
+    )
   }
 
   /** Handle the "analyze clipboard" hotkey — user-triggered only. */

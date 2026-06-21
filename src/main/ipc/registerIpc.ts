@@ -16,6 +16,7 @@ export function registerIpc(windows: WindowManager, controller: PetController): 
   ipcMain.on(IPC.petDragStart, () => windows.startPetDrag())
   ipcMain.on(IPC.petDragEnd, () => windows.endPetDrag())
   ipcMain.on(IPC.petSetInteractive, (_e, interactive: boolean) => windows.setPetInteractive(interactive))
+  ipcMain.on(IPC.petPoke, () => controller.handlePoke())
 
   // --- chat / LLM (request/response) ---
   ipcMain.handle(IPC.chatSend, (_e, message: string) => controller.handleChat(message))
