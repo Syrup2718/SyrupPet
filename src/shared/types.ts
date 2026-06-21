@@ -143,6 +143,10 @@ export interface AppConfig {
      * sent to the LLM for the offer — only the manual hotkey reads + analyses it.
      */
     watchClipboard: boolean
+    /** Play short synthesized sound effects on click / when she speaks. */
+    sound: boolean
+    /** Sound effect volume, 0–100. */
+    soundVolume: number
   }
   launchOnStartup: boolean
 }

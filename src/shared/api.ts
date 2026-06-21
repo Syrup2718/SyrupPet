@@ -35,6 +35,8 @@ export interface SyrupApi {
   config: {
     get(): Promise<AppConfig>
     set(patch: Partial<AppConfig>): Promise<AppConfig>
+    /** Fired to the pet after a settings save, with the merged config. */
+    onChanged(cb: (config: AppConfig) => void): Unsubscribe
   }
   tasks: {
     list(): Promise<Task[]>

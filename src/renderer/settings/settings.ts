@@ -16,6 +16,9 @@ const els = {
   launchOnStartup: $<HTMLInputElement>('launchOnStartup'),
   proximityRadius: $<HTMLInputElement>('proximityRadius'),
   proximityVal: $<HTMLSpanElement>('proximityVal'),
+  sound: $<HTMLInputElement>('sound'),
+  soundVolume: $<HTMLInputElement>('soundVolume'),
+  soundVolumeVal: $<HTMLSpanElement>('soundVolumeVal'),
   hkChat: $<HTMLInputElement>('hk-chat'),
   hkClip: $<HTMLInputElement>('hk-clip'),
   hkPet: $<HTMLInputElement>('hk-pet'),
@@ -61,6 +64,9 @@ async function init(): Promise<void> {
   els.launchOnStartup.checked = config.launchOnStartup
   els.proximityRadius.value = String(config.behaviour.proximityRadius)
   els.proximityVal.textContent = String(config.behaviour.proximityRadius)
+  els.sound.checked = config.behaviour.sound
+  els.soundVolume.value = String(config.behaviour.soundVolume)
+  els.soundVolumeVal.textContent = String(config.behaviour.soundVolume)
   els.hkChat.value = config.hotkeys.toggleChat
   els.hkClip.value = config.hotkeys.analyzeClipboard
   els.hkPet.value = config.hotkeys.togglePet
@@ -74,6 +80,10 @@ async function init(): Promise<void> {
 
   els.proximityRadius.addEventListener('input', () => {
     els.proximityVal.textContent = els.proximityRadius.value
+  })
+
+  els.soundVolume.addEventListener('input', () => {
+    els.soundVolumeVal.textContent = els.soundVolume.value
   })
 
   els.save.addEventListener('click', () => void save())
@@ -94,7 +104,9 @@ async function save(): Promise<void> {
       useEnvironmentContext: els.useEnvironmentContext.checked,
       proximityRadius: Number(els.proximityRadius.value),
       proactive: els.proactive.checked,
-      watchClipboard: els.watchClipboard.checked
+      watchClipboard: els.watchClipboard.checked,
+      sound: els.sound.checked,
+      soundVolume: Number(els.soundVolume.value)
     },
     launchOnStartup: els.launchOnStartup.checked,
     hotkeys: {

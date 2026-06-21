@@ -27,6 +27,8 @@ export function registerIpc(windows: WindowManager, controller: PetController): 
     applyStartupSetting(updated)
     // Switching character pack takes effect immediately by reloading the pet.
     if (patch.character) windows.reloadPet()
+    // Push the new config so live settings (e.g. sound) apply without a restart.
+    windows.sendToPet(IPC.configChanged, updated)
     return updated
   })
 

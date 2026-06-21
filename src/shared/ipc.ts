@@ -37,7 +37,8 @@ export const IPC = {
   environmentUpdate: 'environment:update', // EnvironmentSnapshot
   chatReply: 'chat:reply', // { request, reply } pushed to chat window
   chatThinking: 'chat:thinking', // boolean: show typing indicator
-  tasksUpdated: 'tasks:updated' // signal the task window to refetch
+  tasksUpdated: 'tasks:updated', // signal the task window to refetch
+  configChanged: 'config:changed' // AppConfig pushed to pet after a settings save
 } as const
 
 export type IpcChannel = (typeof IPC)[keyof typeof IPC]

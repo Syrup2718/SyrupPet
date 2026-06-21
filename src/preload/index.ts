@@ -27,7 +27,8 @@ const api: SyrupApi = {
   },
   config: {
     get: (): Promise<AppConfig> => ipcRenderer.invoke(IPC.configGet),
-    set: (patch: Partial<AppConfig>): Promise<AppConfig> => ipcRenderer.invoke(IPC.configSet, patch)
+    set: (patch: Partial<AppConfig>): Promise<AppConfig> => ipcRenderer.invoke(IPC.configSet, patch),
+    onChanged: (cb) => listen(IPC.configChanged, cb)
   },
   tasks: {
     list: () => ipcRenderer.invoke(IPC.tasksList),

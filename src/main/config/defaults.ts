@@ -94,7 +94,9 @@ export const DEFAULT_CONFIG: AppConfig = {
     useEnvironmentContext: true,
     proximityRadius: 180,
     proactive: true,
-    watchClipboard: false
+    watchClipboard: false,
+    sound: true,
+    soundVolume: 35
   },
   launchOnStartup: false
 }

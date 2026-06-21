@@ -1,5 +1,6 @@
 import { EMOTIONS } from '@shared/types'
 import type { AppConfig, Emotion, PetReply, CursorPoint } from '@shared/types'
+import { configureSfx, playClick, playEmotion } from './sfx'
 
 const characterEl = document.getElementById('character') as HTMLDivElement
 const bubbleEl = document.getElementById('bubble') as HTMLDivElement
@@ -51,11 +52,16 @@ let bubbleTimer: number | undefined
 // ----------------------------------------------------------------- bootstrap
 async function init(): Promise<void> {
   config = await window.syrup.config.get()
+  applySfxConfig(config)
   const pack = config.character || 'default'
   renderer = await buildRenderer(pack)
   setEmotion('normal')
   wireInteraction()
   wireIpc()
+}
+
+function applySfxConfig(c: AppConfig): void {
+  configureSfx({ enabled: c.behaviour.sound, volume: c.behaviour.soundVolume / 100 })
 }
 
 async function buildRenderer(pack: string): Promise<CharacterRenderer> {
@@ -249,6 +255,7 @@ function applyReply(reply: PetReply): void {
   setEmotion(reply.emotion)
   playAction(reply.action)
   showBubble(reply.text)
+  playEmotion(reply.emotion) // a short cue when she speaks (not on idle emotion flips)
   busyUntil = Date.now() + 6500
 }
 
@@ -326,6 +333,7 @@ function isOverCharacter(clientX: number, clientY: number): boolean {
 
 function onClick(): void {
   const line = CLICK_LINES[Math.floor(Math.random() * CLICK_LINES.length)]
+  playClick()
   setEmotion('happy')
   playAction('jump')
   showBubble(line, 2500)
@@ -342,6 +350,11 @@ function wireIpc(): void {
     }
   })
   window.syrup.pet.onCursor((p) => updateGaze(p))
+  // Live settings: apply sound on/off + volume the moment they're saved.
+  window.syrup.config.onChanged((c) => {
+    config = c
+    applySfxConfig(c)
+  })
 }
 
 void init()
