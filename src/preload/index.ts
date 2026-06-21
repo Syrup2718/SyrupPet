@@ -37,6 +37,10 @@ const api: SyrupApi = {
     remove: (id: string) => ipcRenderer.invoke(IPC.tasksRemove, id),
     onUpdated: (cb) => listen(IPC.tasksUpdated, cb)
   },
+  memory: {
+    list: () => ipcRenderer.invoke(IPC.memoryList),
+    clear: () => ipcRenderer.invoke(IPC.memoryClear)
+  },
   window: {
     close: () => ipcRenderer.send(IPC.windowClose)
   }

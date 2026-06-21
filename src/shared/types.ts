@@ -105,6 +105,20 @@ export interface TaskOp {
   dueMinutes?: number
 }
 
+/** A durable fact the pet remembers about the user across sessions. */
+export interface Memory {
+  id: string
+  /** Short third-person fact, e.g. "使用者在做一個叫 SyrupPet 的桌寵專案". */
+  text: string
+  createdAt: number
+}
+
+/** A memory mutation the LLM may emit in its reply JSON. */
+export interface MemoryOp {
+  op: 'remember' | 'forget'
+  text: string
+}
+
 /** Supported LLM provider kinds. All are OpenAI-compatible HTTP APIs. */
 export type LLMProviderId = 'openai' | 'deepseek' | 'ollama' | 'custom'
 
@@ -147,6 +161,8 @@ export interface AppConfig {
     sound: boolean
     /** Sound effect volume, 0–100. */
     soundVolume: number
+    /** Let her remember durable facts about you across sessions. */
+    memory: boolean
   }
   launchOnStartup: boolean
 }

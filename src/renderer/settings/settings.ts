@@ -19,6 +19,9 @@ const els = {
   sound: $<HTMLInputElement>('sound'),
   soundVolume: $<HTMLInputElement>('soundVolume'),
   soundVolumeVal: $<HTMLSpanElement>('soundVolumeVal'),
+  memory: $<HTMLInputElement>('memory'),
+  memoryList: $<HTMLUListElement>('memory-list'),
+  memoryClear: $<HTMLButtonElement>('memory-clear'),
   hkChat: $<HTMLInputElement>('hk-chat'),
   hkClip: $<HTMLInputElement>('hk-clip'),
   hkPet: $<HTMLInputElement>('hk-pet'),
@@ -47,6 +50,24 @@ function captureProviderFields(id: LLMProviderId): void {
   }
 }
 
+/** Show what 小漿糖 currently remembers (read-only, for transparency). */
+async function renderMemories(): Promise<void> {
+  const memories = await window.syrup.memory.list()
+  els.memoryList.innerHTML = ''
+  if (!memories.length) {
+    const li = document.createElement('li')
+    li.className = 'muted'
+    li.textContent = '（還沒記得任何事）'
+    els.memoryList.appendChild(li)
+    return
+  }
+  for (const m of memories) {
+    const li = document.createElement('li')
+    li.textContent = m.text
+    els.memoryList.appendChild(li)
+  }
+}
+
 async function init(): Promise<void> {
   config = await window.syrup.config.get()
 
@@ -67,6 +88,8 @@ async function init(): Promise<void> {
   els.sound.checked = config.behaviour.sound
   els.soundVolume.value = String(config.behaviour.soundVolume)
   els.soundVolumeVal.textContent = String(config.behaviour.soundVolume)
+  els.memory.checked = config.behaviour.memory
+  await renderMemories()
   els.hkChat.value = config.hotkeys.toggleChat
   els.hkClip.value = config.hotkeys.analyzeClipboard
   els.hkPet.value = config.hotkeys.togglePet
@@ -84,6 +107,10 @@ async function init(): Promise<void> {
 
   els.soundVolume.addEventListener('input', () => {
     els.soundVolumeVal.textContent = els.soundVolume.value
+  })
+
+  els.memoryClear.addEventListener('click', () => {
+    void window.syrup.memory.clear().then(renderMemories)
   })
 
   els.save.addEventListener('click', () => void save())
@@ -106,7 +133,8 @@ async function save(): Promise<void> {
       proactive: els.proactive.checked,
       watchClipboard: els.watchClipboard.checked,
       sound: els.sound.checked,
-      soundVolume: Number(els.soundVolume.value)
+      soundVolume: Number(els.soundVolume.value),
+      memory: els.memory.checked
     },
     launchOnStartup: els.launchOnStartup.checked,
     hotkeys: {

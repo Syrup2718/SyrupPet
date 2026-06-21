@@ -1,14 +1,16 @@
-import type { AppConfig, ChatMessage, ChatRequest, PetReply, TaskOp } from '@shared/types'
+import type { AppConfig, ChatMessage, ChatRequest, PetReply, TaskOp, MemoryOp } from '@shared/types'
 import { ACTIONS, EMOTIONS } from '@shared/types'
 import { OpenAICompatibleProvider } from './OpenAICompatibleProvider'
 import type { LLMProvider } from './LLMProvider'
 import { buildSystemPrompt, buildUserPrompt } from './prompt'
 import { getTaskStore } from '../tasks/taskStore'
+import { getMemoryStore } from '../memory/memoryStore'
 
-/** A parsed LLM turn: the pet's reply plus any to-do mutations it requested. */
+/** A parsed LLM turn: the pet's reply plus any to-do / memory mutations. */
 export interface LLMReply {
   reply: PetReply
   taskOps: TaskOp[]
+  memoryOps: MemoryOp[]
 }
 
 /**
@@ -43,8 +45,9 @@ export class LLMService {
     const config = this.getConfig()
     const provider = this.buildProvider(config)
 
+    const memories = config.behaviour.memory ? getMemoryStore().list() : []
     const systemPrompt = buildSystemPrompt(config.persona)
-    const userPrompt = buildUserPrompt(req, getTaskStore().listOpen())
+    const userPrompt = buildUserPrompt(req, getTaskStore().listOpen(), memories)
 
     const messages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
@@ -55,6 +58,7 @@ export class LLMService {
     const raw = await provider.complete(messages, { jsonMode: true, signal })
     const reply = parsePetReply(raw)
     const taskOps = parseTaskOps(raw)
+    const memoryOps = config.behaviour.memory ? parseMemoryOps(raw) : []
 
     // Only commit real conversational turns to memory (not clipboard one-offs).
     if (req.intent === 'chat') {
@@ -62,7 +66,7 @@ export class LLMService {
       this.pushHistory({ role: 'assistant', content: reply.text })
     }
 
-    return { reply, taskOps }
+    return { reply, taskOps, memoryOps }
   }
 
   private pushHistory(msg: ChatMessage): void {
@@ -112,6 +116,28 @@ export function parseTaskOps(raw: string): TaskOp[] {
       if (!title) continue // every op needs a title to act on
       const dueMinutes = typeof o.dueMinutes === 'number' && o.dueMinutes > 0 ? o.dueMinutes : undefined
       ops.push({ op: o.op, title, dueMinutes })
+    }
+    return ops
+  } catch {
+    return []
+  }
+}
+
+/** Pull any `memory` mutations out of the reply JSON. Tolerant — bad entries skipped. */
+export function parseMemoryOps(raw: string): MemoryOp[] {
+  const jsonText = extractJsonObject(raw)
+  if (!jsonText) return []
+  try {
+    const obj = JSON.parse(jsonText) as { memory?: unknown }
+    if (!Array.isArray(obj.memory)) return []
+    const ops: MemoryOp[] = []
+    for (const item of obj.memory) {
+      if (!item || typeof item !== 'object') continue
+      const o = item as Record<string, unknown>
+      if (o.op !== 'remember' && o.op !== 'forget') continue
+      const text = typeof o.text === 'string' ? o.text.trim() : ''
+      if (!text) continue
+      ops.push({ op: o.op, text })
     }
     return ops
   } catch {

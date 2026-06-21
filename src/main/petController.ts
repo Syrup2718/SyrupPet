@@ -1,7 +1,8 @@
-import type { ChatRequest, PetReply, TaskOp } from '@shared/types'
+import type { ChatRequest, PetReply, TaskOp, MemoryOp } from '@shared/types'
 import { EMOTIONS } from '@shared/types'
 import { IPC } from '@shared/ipc'
 import { getTaskStore } from './services/tasks/taskStore'
+import { getMemoryStore } from './services/memory/memoryStore'
 import { WindowManager } from './windows/windowManager'
 import { LLMService } from './services/llm/LLMService'
 import { EnvironmentService } from './services/environment/environmentService'
@@ -79,6 +80,16 @@ export class PetController {
     this.windows.broadcastTasksUpdated() // refresh the task window if it's open
   }
 
+  /** Apply the memory mutations the LLM emitted alongside a reply. */
+  private applyMemoryOps(ops: MemoryOp[]): void {
+    if (!ops.length) return
+    const store = getMemoryStore()
+    for (const op of ops) {
+      if (op.op === 'remember') store.remember(op.text)
+      else if (op.op === 'forget') store.forget(op.text)
+    }
+  }
+
   /** Fire a gentle reminder for the first task whose due time has passed. */
   private async checkDueTasks(): Promise<void> {
     if (this.inFlight) return
@@ -150,8 +161,9 @@ export class PetController {
     this.windows.sendToChat(IPC.chatThinking, true)
 
     try {
-      const { reply, taskOps } = await this.llm.reply(req, this.inFlight.signal)
+      const { reply, taskOps, memoryOps } = await this.llm.reply(req, this.inFlight.signal)
       this.applyTaskOps(taskOps)
+      this.applyMemoryOps(memoryOps)
       this.emitReply(req, reply)
       return reply
     } catch (err) {

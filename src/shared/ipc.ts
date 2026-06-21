@@ -27,6 +27,10 @@ export const IPC = {
   tasksComplete: 'tasks:complete',
   tasksRemove: 'tasks:remove',
 
+  // --- long-term memory (renderer -> main, invoke) ---
+  memoryList: 'memory:list',
+  memoryClear: 'memory:clear',
+
   // --- windows ---
   windowClose: 'window:close',
 

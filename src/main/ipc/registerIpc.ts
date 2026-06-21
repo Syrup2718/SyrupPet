@@ -5,6 +5,7 @@ import type { WindowManager } from '../windows/windowManager'
 import type { PetController } from '../petController'
 import { getConfigStore } from '../config/configStore'
 import { getTaskStore } from '../services/tasks/taskStore'
+import { getMemoryStore } from '../services/memory/memoryStore'
 
 /**
  * Wires every renderer<->main channel. Kept in one place so the IPC surface is
@@ -47,6 +48,10 @@ export function registerIpc(windows: WindowManager, controller: PetController): 
     getTaskStore().removeId(id)
     windows.broadcastTasksUpdated()
   })
+
+  // --- long-term memory (read/clear for the settings viewer) ---
+  ipcMain.handle(IPC.memoryList, () => getMemoryStore().list())
+  ipcMain.handle(IPC.memoryClear, () => getMemoryStore().clear())
 
   // --- generic window close ---
   ipcMain.on(IPC.windowClose, (e) => {

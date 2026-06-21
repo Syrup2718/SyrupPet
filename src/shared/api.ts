@@ -5,7 +5,8 @@ import type {
   Emotion,
   EnvironmentSnapshot,
   PetReply,
-  Task
+  Task,
+  Memory
 } from './types'
 
 /** Unsubscribe handle returned by every `on*` listener. */
@@ -45,6 +46,10 @@ export interface SyrupApi {
     remove(id: string): Promise<void>
     /** Fired when the list changed elsewhere (e.g. via chat) — refetch. */
     onUpdated(cb: () => void): Unsubscribe
+  }
+  memory: {
+    list(): Promise<Memory[]>
+    clear(): Promise<void>
   }
   window: {
     close(): void

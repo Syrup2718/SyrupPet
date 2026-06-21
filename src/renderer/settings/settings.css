@@ -120,3 +120,42 @@ footer {
 #save-btn:hover {
   background: #de9234;
 }
+
+/* long-term memory viewer */
+#memory-list {
+  list-style: none;
+  margin: 4px 0 8px;
+  padding: 0;
+  max-height: 140px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+#memory-list li {
+  font-size: 12.5px;
+  color: #4a3525;
+  background: #fff;
+  border: 1px solid #ecd9bd;
+  border-radius: 8px;
+  padding: 5px 9px;
+  word-break: break-word;
+}
+#memory-list li.muted {
+  background: transparent;
+  border: none;
+  color: #b08a5a;
+  padding: 2px 0;
+}
+#memory-clear {
+  border: 1px solid #e3b5b0;
+  background: #fff;
+  color: #c0564a;
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+#memory-clear:hover {
+  background: #f7e3e1;
+}

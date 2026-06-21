@@ -1,5 +1,5 @@
 import { ACTIONS, EMOTIONS } from '@shared/types'
-import type { ChatRequest, EnvironmentSnapshot, Task } from '@shared/types'
+import type { ChatRequest, EnvironmentSnapshot, Task, Memory } from '@shared/types'
 
 /**
  * Builds the system prompt. The key idea of SyrupPet: the LLM must return a
@@ -33,7 +33,15 @@ export function buildSystemPrompt(persona: string): string {
     '  {"op":"remove","title":"要刪掉的那項"}',
     '一次可放多個（例如「今天要做 A、B、C」就放三個 add）。',
     '只是聊天、或只是「查詢」清單時，不要放 tasks（或放空陣列），直接用 text 親口回答即可。',
-    'text 一律維持小漿糖的口吻，例如「好，記下來囉!」「這幾項我先幫你列著~」。'
+    'text 一律維持小漿糖的口吻，例如「好，記下來囉!」「這幾項我先幫你列著~」。',
+    '',
+    '【長期記憶】',
+    '你會長期記得關於使用者的重要事實（出現在使用者訊息裡）。',
+    '當使用者透露「值得長期記住」的事（名字、在做的專案、偏好、習慣、重要的人事物），',
+    '在 JSON 多放一個 "memory" 陣列：[{"op":"remember","text":"用第三人稱寫成簡短事實"}]。',
+    '使用者說「忘記…」時用 {"op":"forget","text":"要忘記的事"}。',
+    '注意：閒聊、一次性、會過期的事（例如此刻的心情、今天天氣）不要記；',
+    '已經記得的（你看得到）不要重複記。沒有要記就不要放 memory。'
   ].join('\n')
 }
 
@@ -46,8 +54,12 @@ function describeEnvironment(env: EnvironmentSnapshot): string {
 }
 
 /** Wraps the actual user/clipboard content with intent-specific framing. */
-export function buildUserPrompt(req: ChatRequest, openTasks: Task[] = []): string {
+export function buildUserPrompt(req: ChatRequest, openTasks: Task[] = [], memories: Memory[] = []): string {
   const blocks: string[] = []
+
+  if (memories.length) {
+    blocks.push(`（你長期記得關於使用者的事）：\n${memories.map((m) => `- ${m.text}`).join('\n')}`)
+  }
 
   if (req.context) {
     blocks.push(`（背景資訊，僅供參考，使用者沒有直接打這些字）：${describeEnvironment(req.context)}`)

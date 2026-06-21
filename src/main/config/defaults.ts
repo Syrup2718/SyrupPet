@@ -96,7 +96,8 @@ export const DEFAULT_CONFIG: AppConfig = {
     proactive: true,
     watchClipboard: false,
     sound: true,
-    soundVolume: 35
+    soundVolume: 35,
+    memory: true
   },
   launchOnStartup: false
 }
