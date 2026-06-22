@@ -105,11 +105,19 @@ interface CharacterManifest {
   mode: 'svg' | 'single' | 'multi'
   image?: string // single mode only; defaults to "character.png"
   images?: Partial<Record<Emotion, string>> // multi mode: per-emotion file names
+  poses?: Record<string, string> // multi mode: extra non-emotion poses, e.g. "lifted"
 }
 
 /** A render strategy: how a given pack draws emotions and reacts to the cursor. */
 interface CharacterRenderer {
   setEmotion(emotion: Emotion): void
+  /**
+   * Show a dedicated non-emotion pose (e.g. "lifted") if the pack ships one;
+   * pass null to drop the pose and return to the current emotion. Returns true
+   * if a dedicated pose image was actually applied, false otherwise (callers
+   * fall back to borrowing an emotion face).
+   */
+  setPose(name: string | null): boolean
   /** dx/dy/dist are character-center -> cursor, in screen pixels. */
   updateGaze(dx: number, dy: number, dist: number): void
 }
@@ -138,7 +146,7 @@ function applySfxConfig(c: AppConfig): void {
 async function buildRenderer(pack: string): Promise<CharacterRenderer> {
   const manifest = await loadManifest(pack)
   if (manifest.mode === 'multi') {
-    const multi = await MultiImageRenderer.create(pack, manifest.images || {})
+    const multi = await MultiImageRenderer.create(pack, manifest.images || {}, manifest.poses || {})
     if (multi) return multi
     console.warn(`[pet] multi-image pack "${pack}" failed to load; falling back to default SVG`)
     return await SvgRenderer.create('default')
@@ -187,6 +195,10 @@ class SvgRenderer implements CharacterRenderer {
     if (svg) characterEl.innerHTML = svg
   }
 
+  setPose(): boolean {
+    return false // SVG packs have no dedicated pose art
+  }
+
   updateGaze(dx: number, dy: number, dist: number): void {
     const len = dist || 1
     const ox = (dx / len) * MAX_PUPIL_OFFSET
@@ -229,6 +241,10 @@ class SingleImageRenderer implements CharacterRenderer {
     characterEl.classList.add(`emo-${emotion}`)
   }
 
+  setPose(): boolean {
+    return false // single-image packs have only the one picture
+  }
+
   updateGaze(dx: number, dy: number, dist: number): void {
     leanToward(this.img, dx, dy, dist)
   }
@@ -238,20 +254,27 @@ class SingleImageRenderer implements CharacterRenderer {
 class MultiImageRenderer implements CharacterRenderer {
   private img!: HTMLImageElement
   private sources = new Map<Emotion, string>()
-  private currentSrc = ''
+  private poses = new Map<string, string>()
+  private currentSrc = '' // the emotion image we'd show when not in a pose
+  private posed = false // while true, a pose image overrides the emotion image
 
   static async create(
     pack: string,
-    images: Partial<Record<Emotion, string>>
+    images: Partial<Record<Emotion, string>>,
+    poses: Record<string, string> = {}
   ): Promise<MultiImageRenderer | null> {
     const r = new MultiImageRenderer()
-    await Promise.all(
-      EMOTIONS.map(async (emotion) => {
+    await Promise.all([
+      ...EMOTIONS.map(async (emotion) => {
         const file = images[emotion] || `${emotion}.png`
         const src = `/characters/${pack}/${file}`
         if (await canLoad(src)) r.sources.set(emotion, src) // also warms the browser cache
+      }),
+      ...Object.entries(poses).map(async ([name, file]) => {
+        const src = `/characters/${pack}/${file}`
+        if (await canLoad(src)) r.poses.set(name, src)
       })
-    )
+    ])
     // need at least the resting face to be usable
     if (!r.srcFor('normal')) return null
 
@@ -272,9 +295,24 @@ class MultiImageRenderer implements CharacterRenderer {
 
   setEmotion(emotion: Emotion): void {
     const src = this.srcFor(emotion)
-    if (!src || src === this.currentSrc) return
+    if (!src) return
     this.currentSrc = src
+    // While held in a pose, remember the emotion but keep the pose on screen.
+    if (!this.posed && src !== this.img.src) this.img.src = src
+  }
+
+  setPose(name: string | null): boolean {
+    if (name === null) {
+      if (!this.posed) return false
+      this.posed = false
+      this.img.src = this.currentSrc
+      return true
+    }
+    const src = this.poses.get(name)
+    if (!src) return false
+    this.posed = true
     this.img.src = src
+    return true
   }
 
   updateGaze(dx: number, dy: number, dist: number): void {
@@ -404,10 +442,11 @@ function wireInteraction(): void {
   })
 }
 
-/** Picked up: swing into the flustered carry pose and squeal a little. */
+/** Picked up: swing into the dedicated carry pose (or borrow shy) and squeal. */
 function enterLiftPose(): void {
   preDragEmotion = currentEmotion
-  setEmotion(LIFT_EMOTION)
+  // Prefer a pack's dedicated "lifted" artwork; otherwise borrow the shy face.
+  if (!renderer.setPose('lifted')) setEmotion(LIFT_EMOTION)
   characterEl.classList.add('lifted')
   showBubble(pick(DRAG_LINES), 1800)
   playClick()
@@ -417,6 +456,7 @@ function enterLiftPose(): void {
 /** Set down: drop the carry pose and settle back to her previous face. */
 function exitLiftPose(): void {
   characterEl.classList.remove('lifted')
+  renderer.setPose(null)
   busyUntil = Date.now() + 400 // brief settle so proximity doesn't instantly flip her
   setEmotion(preDragEmotion)
 }

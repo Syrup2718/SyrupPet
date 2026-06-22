@@ -12,5 +12,8 @@
     "excited": "excited.png",
     "love": "love.png",
     "sad": "sad.png"
+  },
+  "poses": {
+    "lifted": "lifted.png"
   }
 }
