@@ -96,11 +96,8 @@ const SWING_LINES = [
   '再高一點點~ 耶!',
   '看我盪鞦韆! ╰(*°▽°*)╯'
 ]
-const SWING_ENTER_Y = 60 // window top within this many px of the screen top -> swing
-const SWING_EXIT_Y = 130 // drop back to a plain carry below this (hysteresis)
+const SWING_TOP_Y = 60 // released with the window top this close to the screen top -> swing
 let preDragEmotion: Emotion = 'normal' // restore this face when she's set down
-let isLifted = false // currently being dragged (carry pose active)
-let swinging = false // dragged up high enough to swing
 let parked = false // released up high -> keeps swinging on her own until grabbed down
 
 function pick<T>(arr: T[]): T {
@@ -437,9 +434,9 @@ function wireInteraction(): void {
     if (!characterEl.classList.contains('dragging')) return
     characterEl.classList.remove('dragging')
     window.syrup.pet.dragEnd()
-    // Released up high -> she stays swinging; otherwise set her back down.
+    // Released up high -> she settles onto the swing; otherwise set her back down.
     if (dragging) {
-      if (swinging) parkSwing()
+      if (window.screenY < SWING_TOP_Y) startSwinging()
       else exitLiftPose()
     }
     // Re-evaluate click-through now that the drag is over.
@@ -452,11 +449,12 @@ function wireInteraction(): void {
   window.addEventListener('mousemove', (e) => {
     if (!characterEl.classList.contains('dragging')) return
     // First real movement past the threshold -> she's been lifted off the ground.
+    // She stays in the carried pose for the whole drag, however high she goes;
+    // the swing only begins once she's released up high (see mouseup).
     if (!dragging && Math.hypot(e.clientX - downX, e.clientY - downY) > 5) {
       dragging = true
       enterLiftPose()
     }
-    if (dragging) checkSwing()
   })
 }
 
@@ -465,8 +463,6 @@ function enterLiftPose(): void {
   // Grabbing a parked pet keeps her original face for the eventual set-down.
   if (!parked) preDragEmotion = currentEmotion
   parked = false
-  swinging = false
-  isLifted = true
   characterEl.classList.remove('swinging')
   // Prefer a pack's dedicated "lifted" artwork; otherwise borrow the shy face.
   if (!renderer.setPose('lifted')) setEmotion(LIFT_EMOTION)
@@ -478,8 +474,6 @@ function enterLiftPose(): void {
 
 /** Set down: drop the carry/swing pose and settle back to her previous face. */
 function exitLiftPose(): void {
-  isLifted = false
-  swinging = false
   parked = false
   characterEl.classList.remove('lifted', 'swinging')
   renderer.setPose(null)
@@ -487,34 +481,16 @@ function exitLiftPose(): void {
   setEmotion(preDragEmotion)
 }
 
-/** Released up high: leave her happily swinging until she's grabbed back down. */
-function parkSwing(): void {
+/**
+ * Released up high: she settles onto the swing and keeps swinging on her own
+ * until she's grabbed back down. busyUntil stays held so nothing overrides it.
+ */
+function startSwinging(): void {
   parked = true
-  isLifted = false
-  // .swinging class + swing pose stay on; busyUntil stays held so nothing overrides.
-}
-
-/** While carried, dragging her up to the top of the screen makes her swing. */
-function checkSwing(): void {
-  if (!isLifted) return
-  const top = window.screenY
-  if (!swinging && top < SWING_ENTER_Y) enterSwing()
-  else if (swinging && top > SWING_EXIT_Y) exitSwing()
-}
-
-function enterSwing(): void {
-  swinging = true
   renderer.setPose('swing') // dedicated swing art if present; else keeps the lifted image
   characterEl.classList.remove('lifted')
   characterEl.classList.add('swinging')
   showBubble(pick(SWING_LINES), 2000)
-}
-
-function exitSwing(): void {
-  swinging = false
-  if (!renderer.setPose('lifted')) setEmotion(LIFT_EMOTION)
-  characterEl.classList.remove('swinging')
-  characterEl.classList.add('lifted')
 }
 
 function isOverCharacter(clientX: number, clientY: number): boolean {
