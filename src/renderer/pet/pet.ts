@@ -96,7 +96,6 @@ const SWING_LINES = [
   '再高一點點~ 耶!',
   '看我盪鞦韆! ╰(*°▽°*)╯'
 ]
-const SWING_TOP_Y = 60 // released with the window top this close to the screen top -> swing
 let preDragEmotion: Emotion = 'normal' // restore this face when she's set down
 let parked = false // released up high -> keeps swinging on her own until grabbed down
 
@@ -434,9 +433,10 @@ function wireInteraction(): void {
     if (!characterEl.classList.contains('dragging')) return
     characterEl.classList.remove('dragging')
     window.syrup.pet.dragEnd()
-    // Released up high -> she settles onto the swing; otherwise set her back down.
+    // Released in the upper half -> she settles onto the swing; below the
+    // mid-screen line she's "low enough" and goes back to her normal default.
     if (dragging) {
-      if (window.screenY < SWING_TOP_Y) startSwinging()
+      if (inUpperHalf()) startSwinging()
       else exitLiftPose()
     }
     // Re-evaluate click-through now that the drag is over.
@@ -481,9 +481,16 @@ function exitLiftPose(): void {
   setEmotion(preDragEmotion)
 }
 
+/** True when her body sits in the upper half of the screen ("up high"). */
+function inUpperHalf(): boolean {
+  const centerY = window.screenY + window.innerHeight / 2
+  return centerY < window.screen.height / 2
+}
+
 /**
  * Released up high: she settles onto the swing and keeps swinging on her own
- * until she's grabbed back down. busyUntil stays held so nothing overrides it.
+ * until she's grabbed back down past the mid-screen line. busyUntil stays held
+ * so nothing overrides it.
  */
 function startSwinging(): void {
   parked = true
