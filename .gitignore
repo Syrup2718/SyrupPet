@@ -31,6 +31,7 @@ Thumbs.db
 /excited.png
 /love.png
 /sad.png
+/lifted.png
 
 # local env / secrets
 .env
