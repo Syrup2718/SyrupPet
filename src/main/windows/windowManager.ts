@@ -72,12 +72,19 @@ export class WindowManager {
   /** Poked too much: she storms off (hides), then sulks back ~25s later. */
   sulkPet(): void {
     if (!this.pet || this.pet.isDestroyed()) return
+    // Hiding mid-interaction can swallow the mouseup that ends a drag, leaving
+    // the cursor-follow running so she'd "stick to the mouse" on her return.
+    // Stop any drag and have the renderer drop its drag/lift/swing state.
+    this.endPetDrag()
+    this.pet.setIgnoreMouseEvents(true, { forward: true })
+    this.pet.webContents.send(IPC.petReset)
     this.pet.hide()
     if (this.sulkTimer) clearTimeout(this.sulkTimer)
     this.sulkTimer = setTimeout(() => {
       this.sulkTimer = null
       if (!this.pet || this.pet.isDestroyed()) return
       this.pet.show()
+      this.pet.webContents.send(IPC.petReset)
       this.pet.webContents.send(IPC.petSay, {
         text: '…哼,我回來了啦。下次別戳那麼用力。',
         emotion: 'confused',

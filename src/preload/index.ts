@@ -18,6 +18,7 @@ const api: SyrupApi = {
     sulk: () => ipcRenderer.send(IPC.petSulk),
     onSay: (cb) => listen(IPC.petSay, cb),
     onEmotion: (cb) => listen(IPC.petEmotion, cb),
+    onReset: (cb) => listen(IPC.petReset, cb),
     onCursor: (cb) => listen(IPC.cursorMove, cb),
     onEnvironment: (cb) => listen(IPC.environmentUpdate, cb)
   },

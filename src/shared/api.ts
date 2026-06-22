@@ -28,6 +28,8 @@ export interface SyrupApi {
     sulk(): void
     onSay(cb: (reply: PetReply) => void): Unsubscribe
     onEmotion(cb: (emotion: Emotion | string) => void): Unsubscribe
+    /** Main asks the renderer to drop any drag/lift/swing state (e.g. on hide). */
+    onReset(cb: () => void): Unsubscribe
     onCursor(cb: (p: CursorPoint) => void): Unsubscribe
     onEnvironment(cb: (snap: EnvironmentSnapshot) => void): Unsubscribe
   }

@@ -39,6 +39,7 @@ export const IPC = {
   // --- main -> renderer events ---
   petSay: 'pet:say', // PetReply: bubble + expression + action
   petEmotion: 'pet:emotion', // Emotion: switch expression only
+  petReset: 'pet:reset', // drop any drag/lift/swing state (e.g. when she hides)
   cursorMove: 'cursor:move', // { x, y } global cursor for eye-follow
   environmentUpdate: 'environment:update', // EnvironmentSnapshot
   chatReply: 'chat:reply', // { request, reply } pushed to chat window

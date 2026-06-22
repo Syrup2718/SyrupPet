@@ -98,6 +98,7 @@ const SWING_LINES = [
 ]
 let preDragEmotion: Emotion = 'normal' // restore this face when she's set down
 let parked = false // released up high -> keeps swinging on her own until grabbed down
+let dragging = false // past the drag threshold this gesture (vs. a plain poke)
 
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)]
@@ -417,7 +418,6 @@ function wireInteraction(): void {
 
   let downX = 0
   let downY = 0
-  let dragging = false
 
   characterEl.addEventListener('mousedown', (e) => {
     downX = e.clientX
@@ -470,6 +470,21 @@ function enterLiftPose(): void {
   showBubble(pick(DRAG_LINES), 1800)
   playClick()
   busyUntil = Number.MAX_SAFE_INTEGER // hold the pose; cleared the moment she's set down
+}
+
+/**
+ * Hard-reset all interaction state. Used when she hides (sulks): a drag in
+ * progress would otherwise lose its mouseup while hidden and leave her stuck to
+ * the cursor — and a stale "dragging" class would block her from becoming
+ * interactive again on return.
+ */
+function resetInteraction(): void {
+  dragging = false
+  parked = false
+  characterEl.classList.remove('dragging', 'lifted', 'swinging')
+  renderer.setPose(null)
+  busyUntil = 0
+  window.syrup.pet.setInteractive(false) // back to click-through; re-enabled on hover
 }
 
 /** Set down: drop the carry/swing pose and settle back to her previous face. */
@@ -570,6 +585,7 @@ function playPokeAnim(mad: boolean): void {
 // --------------------------------------------------------------------- ipc
 function wireIpc(): void {
   window.syrup.pet.onSay((reply) => applyReply(reply))
+  window.syrup.pet.onReset(() => resetInteraction())
   window.syrup.pet.onEmotion((emotion) => {
     if (EMOTIONS.includes(emotion as Emotion)) {
       setEmotion(emotion as Emotion)
