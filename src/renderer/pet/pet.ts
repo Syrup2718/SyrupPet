@@ -80,6 +80,17 @@ let lastLlmPokeAt = 0
 let moodEmotion: Emotion = 'normal' // her last genuinely-expressed mood
 let moodUntil = 0
 
+// Being picked up & carried: she switches to a flustered "lifted" pose.
+const LIFT_EMOTION: Emotion = 'shy'
+const DRAG_LINES = [
+  '哇啊~ 被抓起來了!',
+  '欸欸欸 要去哪裡啦~',
+  '咻——! 飛高高~',
+  '輕、輕一點啦 >//<',
+  '帶我去哪裡呀?'
+]
+let preDragEmotion: Emotion = 'normal' // restore this face when she's set down
+
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)]
 }
@@ -376,6 +387,7 @@ function wireInteraction(): void {
     if (!characterEl.classList.contains('dragging')) return
     characterEl.classList.remove('dragging')
     window.syrup.pet.dragEnd()
+    if (dragging) exitLiftPose()
     // Re-evaluate click-through now that the drag is over.
     window.syrup.pet.setInteractive(isOverCharacter(e.clientX, e.clientY))
     const moved = Math.hypot(e.clientX - downX, e.clientY - downY)
@@ -383,10 +395,30 @@ function wireInteraction(): void {
   })
 
   window.addEventListener('mousemove', (e) => {
-    if (characterEl.classList.contains('dragging')) {
-      if (Math.hypot(e.clientX - downX, e.clientY - downY) > 5) dragging = true
+    if (!characterEl.classList.contains('dragging')) return
+    // First real movement past the threshold -> she's been lifted off the ground.
+    if (!dragging && Math.hypot(e.clientX - downX, e.clientY - downY) > 5) {
+      dragging = true
+      enterLiftPose()
     }
   })
+}
+
+/** Picked up: swing into the flustered carry pose and squeal a little. */
+function enterLiftPose(): void {
+  preDragEmotion = currentEmotion
+  setEmotion(LIFT_EMOTION)
+  characterEl.classList.add('lifted')
+  showBubble(pick(DRAG_LINES), 1800)
+  playClick()
+  busyUntil = Number.MAX_SAFE_INTEGER // hold the pose; cleared the moment she's set down
+}
+
+/** Set down: drop the carry pose and settle back to her previous face. */
+function exitLiftPose(): void {
+  characterEl.classList.remove('lifted')
+  busyUntil = Date.now() + 400 // brief settle so proximity doesn't instantly flip her
+  setEmotion(preDragEmotion)
 }
 
 function isOverCharacter(clientX: number, clientY: number): boolean {

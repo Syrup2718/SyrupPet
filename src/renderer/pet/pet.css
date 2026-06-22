@@ -36,6 +36,23 @@ body {
 #character.dragging {
   cursor: grabbing;
 }
+/* being carried: dangle from near the top with a gentle pendulum sway */
+#character.lifted {
+  cursor: grabbing;
+  transform-origin: 50% 6%;
+  animation: dangle 0.85s ease-in-out infinite;
+}
+@keyframes dangle {
+  0% {
+    transform: rotate(-6deg) scale(1.05);
+  }
+  50% {
+    transform: rotate(6deg) scale(1.05);
+  }
+  100% {
+    transform: rotate(-6deg) scale(1.05);
+  }
+}
 #character svg {
   width: 100%;
   height: 100%;
