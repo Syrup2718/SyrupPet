@@ -101,6 +101,7 @@ const SWING_EXIT_Y = 130 // drop back to a plain carry below this (hysteresis)
 let preDragEmotion: Emotion = 'normal' // restore this face when she's set down
 let isLifted = false // currently being dragged (carry pose active)
 let swinging = false // dragged up high enough to swing
+let parked = false // released up high -> keeps swinging on her own until grabbed down
 
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)]
@@ -436,11 +437,16 @@ function wireInteraction(): void {
     if (!characterEl.classList.contains('dragging')) return
     characterEl.classList.remove('dragging')
     window.syrup.pet.dragEnd()
-    if (dragging) exitLiftPose()
+    // Released up high -> she stays swinging; otherwise set her back down.
+    if (dragging) {
+      if (swinging) parkSwing()
+      else exitLiftPose()
+    }
     // Re-evaluate click-through now that the drag is over.
     window.syrup.pet.setInteractive(isOverCharacter(e.clientX, e.clientY))
     const moved = Math.hypot(e.clientX - downX, e.clientY - downY)
-    if (moved < 5 && !dragging) onClick()
+    // Ignore stray clicks while she's parked on her swing (grab her to bring down).
+    if (moved < 5 && !dragging && !parked) onClick()
   })
 
   window.addEventListener('mousemove', (e) => {
@@ -456,8 +462,12 @@ function wireInteraction(): void {
 
 /** Picked up: swing into the dedicated carry pose (or borrow shy) and squeal. */
 function enterLiftPose(): void {
-  preDragEmotion = currentEmotion
+  // Grabbing a parked pet keeps her original face for the eventual set-down.
+  if (!parked) preDragEmotion = currentEmotion
+  parked = false
+  swinging = false
   isLifted = true
+  characterEl.classList.remove('swinging')
   // Prefer a pack's dedicated "lifted" artwork; otherwise borrow the shy face.
   if (!renderer.setPose('lifted')) setEmotion(LIFT_EMOTION)
   characterEl.classList.add('lifted')
@@ -470,10 +480,18 @@ function enterLiftPose(): void {
 function exitLiftPose(): void {
   isLifted = false
   swinging = false
+  parked = false
   characterEl.classList.remove('lifted', 'swinging')
   renderer.setPose(null)
   busyUntil = Date.now() + 400 // brief settle so proximity doesn't instantly flip her
   setEmotion(preDragEmotion)
+}
+
+/** Released up high: leave her happily swinging until she's grabbed back down. */
+function parkSwing(): void {
+  parked = true
+  isLifted = false
+  // .swinging class + swing pose stay on; busyUntil stays held so nothing overrides.
 }
 
 /** While carried, dragging her up to the top of the screen makes her swing. */
