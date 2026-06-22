@@ -433,10 +433,10 @@ function wireInteraction(): void {
     if (!characterEl.classList.contains('dragging')) return
     characterEl.classList.remove('dragging')
     window.syrup.pet.dragEnd()
-    // Released in the upper half -> she settles onto the swing; below the
-    // mid-screen line she's "low enough" and goes back to her normal default.
+    // Released in the top third -> she settles onto the swing; below that line
+    // she's "low enough" and goes back to her normal default.
     if (dragging) {
-      if (inUpperHalf()) startSwinging()
+      if (inSwingZone()) startSwinging()
       else exitLiftPose()
     }
     // Re-evaluate click-through now that the drag is over.
@@ -481,10 +481,12 @@ function exitLiftPose(): void {
   setEmotion(preDragEmotion)
 }
 
-/** True when her body sits in the upper half of the screen ("up high"). */
-function inUpperHalf(): boolean {
+const SWING_ZONE = 1 / 3 // her body within the top this fraction of the screen -> "up high"
+
+/** True when her body sits in the top third of the screen ("up high"). */
+function inSwingZone(): boolean {
   const centerY = window.screenY + window.innerHeight / 2
-  return centerY < window.screen.height / 2
+  return centerY < window.screen.height * SWING_ZONE
 }
 
 /**
