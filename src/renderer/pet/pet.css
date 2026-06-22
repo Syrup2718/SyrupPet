@@ -53,6 +53,23 @@ body {
     transform: rotate(-6deg) scale(1.05);
   }
 }
+/* lifted all the way up: a big, slow swing from the very top */
+#character.swinging {
+  cursor: grabbing;
+  transform-origin: 50% 2%;
+  animation: swing 1.5s ease-in-out infinite;
+}
+@keyframes swing {
+  0% {
+    transform: rotate(-22deg) scale(1.04);
+  }
+  50% {
+    transform: rotate(22deg) scale(1.04);
+  }
+  100% {
+    transform: rotate(-22deg) scale(1.04);
+  }
+}
 #character svg {
   width: 100%;
   height: 100%;

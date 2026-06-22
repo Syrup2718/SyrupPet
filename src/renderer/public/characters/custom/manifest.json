@@ -14,6 +14,7 @@
     "sad": "sad.png"
   },
   "poses": {
-    "lifted": "lifted.png"
+    "lifted": "lifted.png",
+    "swing": "swing.png"
   }
 }

@@ -89,7 +89,18 @@ const DRAG_LINES = [
   '輕、輕一點啦 >//<',
   '帶我去哪裡呀?'
 ]
+// Lifted all the way to the top of the screen -> she breaks into a swing.
+const SWING_LINES = [
+  '哇~ 好高!盪鞦韆囉~',
+  '咻咻——! 飛呀~',
+  '再高一點點~ 耶!',
+  '看我盪鞦韆! ╰(*°▽°*)╯'
+]
+const SWING_ENTER_Y = 60 // window top within this many px of the screen top -> swing
+const SWING_EXIT_Y = 130 // drop back to a plain carry below this (hysteresis)
 let preDragEmotion: Emotion = 'normal' // restore this face when she's set down
+let isLifted = false // currently being dragged (carry pose active)
+let swinging = false // dragged up high enough to swing
 
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)]
@@ -439,12 +450,14 @@ function wireInteraction(): void {
       dragging = true
       enterLiftPose()
     }
+    if (dragging) checkSwing()
   })
 }
 
 /** Picked up: swing into the dedicated carry pose (or borrow shy) and squeal. */
 function enterLiftPose(): void {
   preDragEmotion = currentEmotion
+  isLifted = true
   // Prefer a pack's dedicated "lifted" artwork; otherwise borrow the shy face.
   if (!renderer.setPose('lifted')) setEmotion(LIFT_EMOTION)
   characterEl.classList.add('lifted')
@@ -453,12 +466,37 @@ function enterLiftPose(): void {
   busyUntil = Number.MAX_SAFE_INTEGER // hold the pose; cleared the moment she's set down
 }
 
-/** Set down: drop the carry pose and settle back to her previous face. */
+/** Set down: drop the carry/swing pose and settle back to her previous face. */
 function exitLiftPose(): void {
-  characterEl.classList.remove('lifted')
+  isLifted = false
+  swinging = false
+  characterEl.classList.remove('lifted', 'swinging')
   renderer.setPose(null)
   busyUntil = Date.now() + 400 // brief settle so proximity doesn't instantly flip her
   setEmotion(preDragEmotion)
+}
+
+/** While carried, dragging her up to the top of the screen makes her swing. */
+function checkSwing(): void {
+  if (!isLifted) return
+  const top = window.screenY
+  if (!swinging && top < SWING_ENTER_Y) enterSwing()
+  else if (swinging && top > SWING_EXIT_Y) exitSwing()
+}
+
+function enterSwing(): void {
+  swinging = true
+  renderer.setPose('swing') // dedicated swing art if present; else keeps the lifted image
+  characterEl.classList.remove('lifted')
+  characterEl.classList.add('swinging')
+  showBubble(pick(SWING_LINES), 2000)
+}
+
+function exitSwing(): void {
+  swinging = false
+  if (!renderer.setPose('lifted')) setEmotion(LIFT_EMOTION)
+  characterEl.classList.remove('swinging')
+  characterEl.classList.add('lifted')
 }
 
 function isOverCharacter(clientX: number, clientY: number): boolean {
