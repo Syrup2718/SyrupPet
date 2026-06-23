@@ -26,6 +26,10 @@ const IDLE_TRIGGER_SECONDS = 300 // 5 min of no input = "卡住了嗎?"
 const BREAK_RESETS_AFTER = 180 // 3 min idle counts as a real break (resets work streak)
 const OVERWORK_SECONDS = 50 * 60 // 50 min continuous work
 const LATE_NIGHT_MAX_PER_DAY = 2
+const FOCUS_QUIET = 70 // status.focus at/above this -> hush the chatty triggers
+// While the user is deep in focus, only health-related care may speak; the
+// chit-chat triggers stay silent so she's a quiet companion, not a distraction.
+const CARE_TRIGGERS = new Set<ProactiveHint['trigger']>(['lateNight', 'overwork', 'taskDue'])
 
 /** process.exe (lowercased) -> friendly name, for the "app opened" greeting. */
 const WATCHED_APPS: Record<string, string> = {
@@ -56,7 +60,9 @@ export class ProactiveService {
     private readonly env: EnvironmentService,
     private readonly onFire: (hint: ProactiveHint) => void,
     /** Live read of config.behaviour.proactive so the toggle takes effect at once. */
-    private readonly isEnabled: () => boolean
+    private readonly isEnabled: () => boolean,
+    /** Current focus level 0–100 (0 when the status system is off → no extra hush). */
+    private readonly getFocus: () => number = () => 0
   ) {}
 
   start(): void {
@@ -98,6 +104,8 @@ export class ProactiveService {
 
     const hint = this.pick(snap, now, prevProcess)
     if (!hint) return
+    // Deep focus -> stay quiet unless it's genuine care (break/late-night reminders).
+    if (this.getFocus() >= FOCUS_QUIET && !CARE_TRIGGERS.has(hint.trigger)) return
 
     this.lastGlobal = now
     this.lastByTrigger[hint.trigger] = now

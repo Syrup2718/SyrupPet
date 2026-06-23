@@ -5,6 +5,8 @@ import type {
   Emotion,
   EnvironmentSnapshot,
   PetReply,
+  PetStatus,
+  StatusEvent,
   Task,
   Memory
 } from './types'
@@ -26,6 +28,8 @@ export interface SyrupApi {
     poke(): void
     /** Poked way too much — she storms off (hides) and returns on her own. */
     sulk(): void
+    /** Report an interaction (e.g. a poke) so the brain can nudge her status. */
+    reportStatus(event: StatusEvent): void
     onSay(cb: (reply: PetReply) => void): Unsubscribe
     onEmotion(cb: (emotion: Emotion | string) => void): Unsubscribe
     /** Main asks the renderer to drop any drag/lift/swing state (e.g. on hide). */
@@ -56,6 +60,13 @@ export interface SyrupApi {
   memory: {
     list(): Promise<Memory[]>
     clear(): Promise<void>
+  }
+  status: {
+    get(): Promise<PetStatus>
+    /** Reset every value back to the starting baseline. */
+    reset(): Promise<PetStatus>
+    /** Fired whenever any status value changes (decay tick or interaction). */
+    onChanged(cb: (status: PetStatus) => void): Unsubscribe
   }
   window: {
     close(): void

@@ -1,5 +1,6 @@
 import { ACTIONS, EMOTIONS } from '@shared/types'
-import type { ChatRequest, EnvironmentSnapshot, Task, Memory } from '@shared/types'
+import type { ChatRequest, EnvironmentSnapshot, PetStatus, Task, Memory } from '@shared/types'
+import { describeStatus } from '../status/statusRules'
 
 /**
  * Builds the system prompt. The key idea of SyrupPet: the LLM must return a
@@ -41,7 +42,15 @@ export function buildSystemPrompt(persona: string): string {
     '在 JSON 多放一個 "memory" 陣列：[{"op":"remember","text":"用第三人稱寫成簡短事實"}]。',
     '使用者說「忘記…」時用 {"op":"forget","text":"要忘記的事"}。',
     '注意：閒聊、一次性、會過期的事（例如此刻的心情、今天天氣）不要記；',
-    '已經記得的（你看得到）不要重複記。沒有要記就不要放 memory。'
+    '已經記得的（你看得到）不要重複記。沒有要記就不要放 memory。',
+    '',
+    '【內在狀態】',
+    '使用者訊息裡可能附上你目前的內在狀態（心情/能量/親密度/使用者專注度/擔心值）。',
+    '請讓你的語氣與 emotion 自然反映這些狀態，但「絕對不要」把數字或這些詞講出來：',
+    '  能量低→話可以短一點、偶爾流露想睡；心情好→輕快；擔心高→溫柔、關心他但別說教；',
+    '  親密度高→更像熟人、可以自然撒嬌/吐槽；使用者專注度高→盡量簡短、安靜陪伴、別一直問問題。',
+    '當使用者「誇獎」你時，在 JSON 多放 "status":[{"op":"praised"}]（你通常也會害羞或開心）；',
+    '當使用者「道謝」你時，放 "status":[{"op":"thanked"}]。沒有就不要放 status。'
   ].join('\n')
 }
 
@@ -54,8 +63,17 @@ function describeEnvironment(env: EnvironmentSnapshot): string {
 }
 
 /** Wraps the actual user/clipboard content with intent-specific framing. */
-export function buildUserPrompt(req: ChatRequest, openTasks: Task[] = [], memories: Memory[] = []): string {
+export function buildUserPrompt(
+  req: ChatRequest,
+  openTasks: Task[] = [],
+  memories: Memory[] = [],
+  status: PetStatus | null = null
+): string {
   const blocks: string[] = []
+
+  if (status) {
+    blocks.push(describeStatus(status))
+  }
 
   if (memories.length) {
     blocks.push(`（你長期記得關於使用者的事）：\n${memories.map((m) => `- ${m.text}`).join('\n')}`)

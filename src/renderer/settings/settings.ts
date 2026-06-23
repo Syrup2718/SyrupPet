@@ -1,6 +1,15 @@
-import type { AppConfig, LLMProviderId } from '@shared/types'
+import type { AppConfig, LLMProviderId, PetStatus, StatusKey } from '@shared/types'
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T
+
+/** Display order, label and bar colour for each status value. */
+const STATUS_META: { key: StatusKey; label: string; color: string }[] = [
+  { key: 'mood', label: '心情', color: '#f0a64b' },
+  { key: 'energy', label: '能量', color: '#5ec27a' },
+  { key: 'affection', label: '親密度', color: '#ec6f9e' },
+  { key: 'focus', label: '專注度', color: '#5a9bd8' },
+  { key: 'concern', label: '擔心值', color: '#b07fd0' }
+]
 
 const els = {
   provider: $<HTMLSelectElement>('provider'),
@@ -22,6 +31,9 @@ const els = {
   memory: $<HTMLInputElement>('memory'),
   memoryList: $<HTMLUListElement>('memory-list'),
   memoryClear: $<HTMLButtonElement>('memory-clear'),
+  statusEnabled: $<HTMLInputElement>('statusEnabled'),
+  statusBars: $<HTMLDivElement>('status-bars'),
+  statusReset: $<HTMLButtonElement>('status-reset'),
   hkChat: $<HTMLInputElement>('hk-chat'),
   hkClip: $<HTMLInputElement>('hk-clip'),
   hkPet: $<HTMLInputElement>('hk-pet'),
@@ -68,6 +80,36 @@ async function renderMemories(): Promise<void> {
   }
 }
 
+/** Draw the five status bars (read-only). Dims them when the system is off. */
+function renderStatus(status: PetStatus): void {
+  els.statusBars.classList.toggle('disabled', !els.statusEnabled.checked)
+  els.statusBars.innerHTML = ''
+  for (const { key, label, color } of STATUS_META) {
+    const value = Math.round(status[key])
+    const row = document.createElement('div')
+    row.className = 'status-bar'
+
+    const name = document.createElement('span')
+    name.className = 'sb-label'
+    name.textContent = label
+
+    const track = document.createElement('div')
+    track.className = 'sb-track'
+    const fill = document.createElement('div')
+    fill.className = 'sb-fill'
+    fill.style.width = `${value}%`
+    fill.style.background = color
+    track.appendChild(fill)
+
+    const val = document.createElement('span')
+    val.className = 'sb-val'
+    val.textContent = String(value)
+
+    row.append(name, track, val)
+    els.statusBars.appendChild(row)
+  }
+}
+
 async function init(): Promise<void> {
   config = await window.syrup.config.get()
 
@@ -90,6 +132,8 @@ async function init(): Promise<void> {
   els.soundVolumeVal.textContent = String(config.behaviour.soundVolume)
   els.memory.checked = config.behaviour.memory
   await renderMemories()
+  els.statusEnabled.checked = config.behaviour.status
+  renderStatus(await window.syrup.status.get())
   els.hkChat.value = config.hotkeys.toggleChat
   els.hkClip.value = config.hotkeys.analyzeClipboard
   els.hkPet.value = config.hotkeys.togglePet
@@ -113,6 +157,16 @@ async function init(): Promise<void> {
     void window.syrup.memory.clear().then(renderMemories)
   })
 
+  els.statusReset.addEventListener('click', () => {
+    void window.syrup.status.reset().then(renderStatus)
+  })
+  // Reflect the dim/undim immediately as the toggle flips (saved on 儲存).
+  els.statusEnabled.addEventListener('change', () =>
+    els.statusBars.classList.toggle('disabled', !els.statusEnabled.checked)
+  )
+  // Live: the manager pushes new values on every decay tick / interaction.
+  window.syrup.status.onChanged((s) => renderStatus(s))
+
   els.save.addEventListener('click', () => void save())
   els.close.addEventListener('click', () => window.syrup.window.close())
 }
@@ -134,7 +188,8 @@ async function save(): Promise<void> {
       watchClipboard: els.watchClipboard.checked,
       sound: els.sound.checked,
       soundVolume: Number(els.soundVolume.value),
-      memory: els.memory.checked
+      memory: els.memory.checked,
+      status: els.statusEnabled.checked
     },
     launchOnStartup: els.launchOnStartup.checked,
     hotkeys: {

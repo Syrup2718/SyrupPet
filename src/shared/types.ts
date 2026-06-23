@@ -81,6 +81,48 @@ export interface CursorPoint {
   y: number
 }
 
+/**
+ * 小漿糖's live inner state — what makes her feel like a real companion rather
+ * than a stateless face. Every value is 0–100. Persisted in userData/status.json
+ * and decays gently toward a baseline so changes never feel abrupt.
+ */
+export const STATUS_KEYS = ['mood', 'energy', 'affection', 'focus', 'concern'] as const
+export type StatusKey = (typeof STATUS_KEYS)[number]
+
+export interface PetStatus {
+  /** 心情:開不開心,影響表情與語氣。 */
+  mood: number
+  /** 能量:精神狀態。低→容易 sleepy,高→活潑。 */
+  energy: number
+  /** 親密度:和使用者的熟悉程度。互動會慢慢提升,長期不理會慢慢掉。 */
+  affection: number
+  /** 專注度:使用者是否正在專注工作。高→少打擾,安靜陪伴。 */
+  focus: number
+  /** 擔心值:對使用者狀態的擔心。深夜/久坐/卡住會上升。 */
+  concern: number
+  /** Epoch ms of the last change (used to apply catch-up decay after a restart). */
+  updatedAt: number
+}
+
+/**
+ * A discrete interaction that nudges the status. The numeric effect of each
+ * event lives in main (StatusRules) — the renderer only reports *what happened*,
+ * keeping the body/brain split intact.
+ */
+export type StatusEvent =
+  | 'poke' // 單純點一下
+  | 'pokeStorm' // 狂點
+  | 'chat' // 聊天
+  | 'praised' // 被誇獎(LLM 偵測)
+  | 'thanked' // 被道謝(LLM 偵測)
+  | 'taskComplete' // 完成代辦
+  | 'clipboardError' // 幫忙看錯誤
+
+/** A status reaction the LLM may emit in its reply JSON (like task/memory ops). */
+export interface StatusOp {
+  op: 'praised' | 'thanked'
+}
+
 /** A local to-do item. Persisted in userData/tasks.json. */
 export type TaskStatus = 'todo' | 'done'
 export interface Task {
@@ -163,6 +205,8 @@ export interface AppConfig {
     soundVolume: number
     /** Let her remember durable facts about you across sessions. */
     memory: boolean
+    /** Run the live status system (mood/energy/affection/focus/concern). */
+    status: boolean
   }
   launchOnStartup: boolean
 }

@@ -16,6 +16,7 @@ const api: SyrupApi = {
     setInteractive: (interactive) => ipcRenderer.send(IPC.petSetInteractive, interactive),
     poke: () => ipcRenderer.send(IPC.petPoke),
     sulk: () => ipcRenderer.send(IPC.petSulk),
+    reportStatus: (event) => ipcRenderer.send(IPC.petStatusEvent, event),
     onSay: (cb) => listen(IPC.petSay, cb),
     onEmotion: (cb) => listen(IPC.petEmotion, cb),
     onReset: (cb) => listen(IPC.petReset, cb),
@@ -43,6 +44,11 @@ const api: SyrupApi = {
   memory: {
     list: () => ipcRenderer.invoke(IPC.memoryList),
     clear: () => ipcRenderer.invoke(IPC.memoryClear)
+  },
+  status: {
+    get: (): Promise<import('@shared/types').PetStatus> => ipcRenderer.invoke(IPC.statusGet),
+    reset: (): Promise<import('@shared/types').PetStatus> => ipcRenderer.invoke(IPC.statusReset),
+    onChanged: (cb) => listen(IPC.statusChanged, cb)
   },
   window: {
     close: () => ipcRenderer.send(IPC.windowClose)

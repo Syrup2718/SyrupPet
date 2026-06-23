@@ -1,4 +1,4 @@
-import type { AppConfig, ChatMessage, ChatRequest, PetReply, TaskOp, MemoryOp } from '@shared/types'
+import type { AppConfig, ChatMessage, ChatRequest, PetReply, PetStatus, TaskOp, MemoryOp, StatusOp } from '@shared/types'
 import { ACTIONS, EMOTIONS } from '@shared/types'
 import { OpenAICompatibleProvider } from './OpenAICompatibleProvider'
 import type { LLMProvider } from './LLMProvider'
@@ -6,11 +6,12 @@ import { buildSystemPrompt, buildUserPrompt } from './prompt'
 import { getTaskStore } from '../tasks/taskStore'
 import { getMemoryStore } from '../memory/memoryStore'
 
-/** A parsed LLM turn: the pet's reply plus any to-do / memory mutations. */
+/** A parsed LLM turn: the pet's reply plus any to-do / memory / status mutations. */
 export interface LLMReply {
   reply: PetReply
   taskOps: TaskOp[]
   memoryOps: MemoryOp[]
+  statusOps: StatusOp[]
 }
 
 /**
@@ -22,11 +23,13 @@ export interface LLMReply {
  */
 export class LLMService {
   private getConfig: () => AppConfig
+  private getStatus: () => PetStatus | null
   private history: ChatMessage[] = []
   private readonly maxHistory = 12
 
-  constructor(getConfig: () => AppConfig) {
+  constructor(getConfig: () => AppConfig, getStatus: () => PetStatus | null = () => null) {
     this.getConfig = getConfig
+    this.getStatus = getStatus
   }
 
   private buildProvider(config: AppConfig): LLMProvider {
@@ -46,8 +49,9 @@ export class LLMService {
     const provider = this.buildProvider(config)
 
     const memories = config.behaviour.memory ? getMemoryStore().list() : []
+    const status = config.behaviour.status ? this.getStatus() : null
     const systemPrompt = buildSystemPrompt(config.persona)
-    const userPrompt = buildUserPrompt(req, getTaskStore().listOpen(), memories)
+    const userPrompt = buildUserPrompt(req, getTaskStore().listOpen(), memories, status)
 
     const messages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
@@ -59,6 +63,7 @@ export class LLMService {
     const reply = parsePetReply(raw)
     const taskOps = parseTaskOps(raw)
     const memoryOps = config.behaviour.memory ? parseMemoryOps(raw) : []
+    const statusOps = config.behaviour.status ? parseStatusOps(raw) : []
 
     // Only commit real conversational turns to memory (not clipboard one-offs).
     if (req.intent === 'chat') {
@@ -66,7 +71,7 @@ export class LLMService {
       this.pushHistory({ role: 'assistant', content: reply.text })
     }
 
-    return { reply, taskOps, memoryOps }
+    return { reply, taskOps, memoryOps, statusOps }
   }
 
   private pushHistory(msg: ChatMessage): void {
@@ -138,6 +143,26 @@ export function parseMemoryOps(raw: string): MemoryOp[] {
       const text = typeof o.text === 'string' ? o.text.trim() : ''
       if (!text) continue
       ops.push({ op: o.op, text })
+    }
+    return ops
+  } catch {
+    return []
+  }
+}
+
+/** Pull any `status` reactions out of the reply JSON. Tolerant — bad entries skipped. */
+export function parseStatusOps(raw: string): StatusOp[] {
+  const jsonText = extractJsonObject(raw)
+  if (!jsonText) return []
+  try {
+    const obj = JSON.parse(jsonText) as { status?: unknown }
+    if (!Array.isArray(obj.status)) return []
+    const ops: StatusOp[] = []
+    for (const item of obj.status) {
+      if (!item || typeof item !== 'object') continue
+      const o = item as Record<string, unknown>
+      if (o.op !== 'praised' && o.op !== 'thanked') continue
+      ops.push({ op: o.op })
     }
     return ops
   } catch {

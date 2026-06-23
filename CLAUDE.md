@@ -24,8 +24,9 @@ npm run dist       # electron-builder 產生安裝檔 -> dist/
   - `petController.ts`：「腦幹」— 意圖 → `LLMService` → 把 `PetReply` 廣播到桌寵 + 聊天視窗
   - `services/llm/`：`LLMProvider` 介面 + `OpenAICompatibleProvider`(所有 provider 共用) + `prompt.ts` + `parsePetReply`
   - `services/environment/`：前景視窗(`foregroundWindow.ts`,PowerShell+Win32)、閒置(`powerMonitor`)、全域游標
-  - `services/`：`clipboard`、`hotkeys`、`tray`、`proactive`(主動陪伴)、`tasks`(代辦,`tasks.json`)、`memory`(長期記憶,`memory.json`)；`config/`：存 `config.json`
+  - `services/`：`clipboard`、`hotkeys`、`tray`、`proactive`(主動陪伴)、`tasks`(代辦,`tasks.json`)、`memory`(長期記憶,`memory.json`)、`status`(狀態系統,`status.json`)；`config/`：存 `config.json`
   - **代辦/記憶系統**:同一套「LLM 在回覆 JSON 夾帶 ops」模式。代辦 `tasks:[{op:add/done/remove,title,dueMinutes}]`、記憶 `memory:[{op:remember/forget,text}]`(分別由 `parseTaskOps`/`parseMemoryOps` 解析,`petController.applyTaskOps`/`applyMemoryOps` 套用)。每次聊天會把目前 open 代辦 + 長期記憶塞進 user prompt 當脈絡。代辦到期提醒由 `petController` 每 30 秒檢查 `taskStore.listDue`。記憶可在設定頁檢視/清除,有 `behaviour.memory` 開關、上限 50 筆。
+  - **狀態系統**:小漿糖的五個內在數值(mood/energy/affection/focus/concern,各 0~100)。三層:`statusRules.ts`(純函式:事件 delta、衰減回基準、環境感知、產生給 LLM 的狀態描述)+`statusStore.ts`(持久化,載入時補做停機期間的衰減)+`statusManager.ts`(每分鐘 tick、訂閱環境訊號、推播 `status:changed`、提供 record/get/reset)。互動事件來源:`poke`/`pokeStorm` 由 renderer 經 `pet:status-event` 回報(主程序用白名單驗證);`chat`/`clipboardError`/`taskComplete` 由 `petController`/`registerIpc` 直接 record;`praised`/`thanked` 沿用「LLM 夾帶 ops」模式(`status:[{op}]`→`parseStatusOps`→`applyStatusOps`)。狀態餵進 user prompt(`describeStatus`)、影響 renderer 閒置表情(`statusBaseline`)、影響 proactive(focus≥70 只放行關心類觸發)。有 `behaviour.status` 開關,關閉則凍結(不 tick/不記/不推)但仍可在設定頁檢視/重置。
   - `windows/windowManager.ts`：透明/無邊框/置頂、拖曳、click-through
   - `services/tray/trayService.ts`：托盤圖示用 `resources/tray.png`(電腦透過 electron-vite `?asset` 載入)
 - `resources/` — 主程序用的靜態資產(用 `import x from '...?asset'` 載入,型別宣告在 `src/main/env.d.ts`):`tray.png`(托盤)、`icon.png`(聊天/設定視窗工作列圖示)。`build/icon.ico` 是 electron-builder 的安裝檔/exe 圖示。圖片暫存於 repo 根的 `syrup.png`/`*.png` 已被 `.gitignore` 排除。

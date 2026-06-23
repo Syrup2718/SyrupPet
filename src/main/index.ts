@@ -3,6 +3,7 @@ import { WindowManager } from './windows/windowManager'
 import { LLMService } from './services/llm/LLMService'
 import { EnvironmentService } from './services/environment/environmentService'
 import { CursorTracker } from './services/environment/cursorTracker'
+import { StatusManager } from './services/status/statusManager'
 import { PetController } from './petController'
 import { HotkeyService } from './services/hotkeys/hotkeyService'
 import { TrayService } from './services/tray/trayService'
@@ -32,12 +33,19 @@ function bootstrap(): void {
   const config = getConfigStore().get()
 
   windows = new WindowManager(WindowManager.defaultPreloadPath())
-  const llm = new LLMService(() => getConfigStore().get())
+  const status = new StatusManager(
+    () => getConfigStore().get().behaviour.status,
+    (s) => windows.broadcastStatus(s)
+  )
+  const llm = new LLMService(
+    () => getConfigStore().get(),
+    () => (getConfigStore().get().behaviour.status ? status.get() : null)
+  )
   const environment = new EnvironmentService()
   const cursor = new CursorTracker()
-  controller = new PetController(windows, llm, environment, cursor)
+  controller = new PetController(windows, llm, environment, cursor, status)
 
-  registerIpc(windows, controller)
+  registerIpc(windows, controller, status)
 
   windows.createPet()
   controller.start()

@@ -182,6 +182,12 @@ export class WindowManager {
     if (this.tasks && !this.tasks.isDestroyed()) this.tasks.webContents.send(IPC.tasksUpdated)
   }
 
+  /** Push the latest status to whoever's showing it: the pet and the settings page. */
+  broadcastStatus(status: unknown): void {
+    if (this.pet && !this.pet.isDestroyed()) this.pet.webContents.send(IPC.statusChanged, status)
+    if (this.settings && !this.settings.isDestroyed()) this.settings.webContents.send(IPC.statusChanged, status)
+  }
+
   private createAuxWindow(entry: 'chat' | 'settings' | 'tasks', width: number, height: number): BrowserWindow {
     const { workArea } = screen.getPrimaryDisplay()
     const win = new BrowserWindow({

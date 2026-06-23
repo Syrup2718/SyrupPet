@@ -1,4 +1,4 @@
-import type { ChatRequest, PetReply, TaskOp, MemoryOp } from '@shared/types'
+import type { ChatRequest, PetReply, TaskOp, MemoryOp, StatusOp, StatusEvent } from '@shared/types'
 import { EMOTIONS } from '@shared/types'
 import { IPC } from '@shared/ipc'
 import { getTaskStore } from './services/tasks/taskStore'
@@ -11,7 +11,11 @@ import { ProactiveService } from './services/proactive/proactiveService'
 import type { ProactiveHint } from './services/proactive/proactiveService'
 import { readClipboardText } from './services/clipboard/clipboardService'
 import { ClipboardWatcher } from './services/clipboard/clipboardWatcher'
+import { StatusManager } from './services/status/statusManager'
 import { getConfigStore } from './config/configStore'
+
+/** Interaction events the renderer is allowed to report (validated, untrusted). */
+const RENDERER_STATUS_EVENTS = new Set<StatusEvent>(['poke', 'pokeStorm'])
 
 /**
  * The "brain stem": turns user intents (chat / clipboard) into LLM calls and
@@ -29,12 +33,14 @@ export class PetController {
     private windows: WindowManager,
     private llm: LLMService,
     private environment: EnvironmentService,
-    private cursor: CursorTracker
+    private cursor: CursorTracker,
+    private status: StatusManager
   ) {
     this.proactive = new ProactiveService(
       this.environment,
       (hint) => void this.runProactive(hint),
-      () => getConfigStore().get().behaviour.proactive
+      () => getConfigStore().get().behaviour.proactive,
+      () => (getConfigStore().get().behaviour.status ? this.status.get().focus : 0)
     )
     // Opt-in: only polls the clipboard when BOTH proactive and watchClipboard
     // are on. On an error-looking change it just offers help (no content sent).
@@ -60,6 +66,9 @@ export class PetController {
     this.environment.on('update', (snap) => this.windows.sendToPet(IPC.environmentUpdate, snap))
     this.environment.start()
 
+    // Live inner status: decay tick + ambient signals from the environment.
+    this.status.start(this.environment)
+
     // Let her speak up on her own, with restraint (cooldowns live in the service).
     this.proactive.start()
     this.clipboardWatcher.start() // self-gates; reads nothing unless opted in
@@ -75,10 +84,25 @@ export class PetController {
     for (const op of ops) {
       if (!op.title) continue
       if (op.op === 'add') store.add(op.title, op.dueMinutes)
-      else if (op.op === 'done') store.complete(op.title)
-      else if (op.op === 'remove') store.remove(op.title)
+      else if (op.op === 'done') {
+        store.complete(op.title)
+        this.status.record('taskComplete') // finishing something feels good
+      } else if (op.op === 'remove') store.remove(op.title)
     }
     this.windows.broadcastTasksUpdated() // refresh the task window if it's open
+  }
+
+  /** Apply the status reactions (praise/thanks) the LLM emitted alongside a reply. */
+  private applyStatusOps(ops: StatusOp[]): void {
+    for (const op of ops) this.status.record(op.op)
+  }
+
+  /**
+   * A validated interaction reported by the renderer (e.g. a poke). The renderer
+   * is untrusted, so we only accept the small whitelist of events it owns.
+   */
+  recordStatus(event: StatusEvent): void {
+    if (RENDERER_STATUS_EVENTS.has(event)) this.status.record(event)
   }
 
   /** Apply the memory mutations the LLM emitted alongside a reply. */
@@ -111,6 +135,7 @@ export class PetController {
   /** Handle a user chat message from the chat window. */
   async handleChat(message: string): Promise<PetReply> {
     const config = getConfigStore().get()
+    this.status.record('chat') // talking to her warms her up a little
     const context = config.behaviour.useEnvironmentContext
       ? await this.environment.getSnapshot()
       : undefined
@@ -144,6 +169,7 @@ export class PetController {
       this.emitReply({ intent: 'clipboard', content: '' }, empty)
       return empty
     }
+    this.status.record('clipboardError') // helping debug -> she frets a bit for you
     this.windows.showChat()
     return this.run({ intent: 'clipboard', content: text })
   }
@@ -181,9 +207,10 @@ export class PetController {
     this.windows.sendToChat(IPC.chatThinking, true)
 
     try {
-      const { reply, taskOps, memoryOps } = await this.llm.reply(req, this.inFlight.signal)
+      const { reply, taskOps, memoryOps, statusOps } = await this.llm.reply(req, this.inFlight.signal)
       this.applyTaskOps(taskOps)
       this.applyMemoryOps(memoryOps)
+      this.applyStatusOps(statusOps)
       this.emitReply(req, reply)
       return reply
     } catch (err) {
@@ -230,6 +257,7 @@ export class PetController {
     if (this.taskTimer) clearInterval(this.taskTimer)
     this.proactive.stop()
     this.clipboardWatcher.stop()
+    this.status.stop(this.environment)
     this.cursor.stop()
     this.environment.stop()
   }

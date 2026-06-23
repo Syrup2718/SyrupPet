@@ -97,7 +97,8 @@ export const DEFAULT_CONFIG: AppConfig = {
     watchClipboard: false,
     sound: true,
     soundVolume: 35,
-    memory: true
+    memory: true,
+    status: true
   },
   launchOnStartup: false
 }

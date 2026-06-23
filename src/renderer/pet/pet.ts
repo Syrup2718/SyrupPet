@@ -1,5 +1,5 @@
 import { EMOTIONS } from '@shared/types'
-import type { AppConfig, Emotion, PetReply, CursorPoint } from '@shared/types'
+import type { AppConfig, Emotion, PetReply, PetStatus, CursorPoint } from '@shared/types'
 import { configureSfx, playClick, playEmotion } from './sfx'
 
 const characterEl = document.getElementById('character') as HTMLDivElement
@@ -136,6 +136,22 @@ let renderer: CharacterRenderer
 let currentEmotion: Emotion = 'normal'
 let busyUntil = 0 // while now < busyUntil, proximity won't override the expression
 let bubbleTimer: number | undefined
+// Her resting face reflects how she's doing (low energy -> sleepy, worried -> sad).
+// Stays 'normal' while the status system is off so nothing changes for opted-out users.
+let statusBaseline: Emotion = 'normal'
+
+/** Map the live status to the expression she idles in when nothing else is going on. */
+function baselineFromStatus(s: PetStatus): Emotion {
+  if (s.energy < 22) return 'sleepy'
+  if (s.concern >= 72) return 'sad'
+  if (s.mood < 28) return 'sad'
+  if (s.mood >= 80 && s.affection >= 55) return 'happy'
+  return 'normal'
+}
+
+function applyStatus(s: PetStatus): void {
+  statusBaseline = config?.behaviour.status ? baselineFromStatus(s) : 'normal'
+}
 
 // ----------------------------------------------------------------- bootstrap
 async function init(): Promise<void> {
@@ -143,6 +159,7 @@ async function init(): Promise<void> {
   applySfxConfig(config)
   const pack = config.character || 'default'
   renderer = await buildRenderer(pack)
+  if (config.behaviour.status) applyStatus(await window.syrup.status.get())
   setEmotion('normal')
   wireInteraction()
   wireIpc()
@@ -391,10 +408,10 @@ function updateGaze(cursor: CursorPoint): void {
 
   renderer.updateGaze(dx, dy, dist)
 
-  // proximity -> curious expression, when not busy showing a reply
+  // proximity -> curious expression; otherwise idle in her status-driven mood
   if (Date.now() < busyUntil) return
   const near = dist < config.behaviour.proximityRadius
-  const desired: Emotion = near ? 'confused' : 'normal'
+  const desired: Emotion = near ? 'confused' : statusBaseline
   if (desired !== currentEmotion) setEmotion(desired)
 }
 
@@ -535,6 +552,7 @@ function onClick(): void {
 
   // Last straw: poked way too many times in a row -> she storms off.
   if (pokeCount >= POKE_RAGE_QUIT) {
+    window.syrup.pet.reportStatus('pokeStorm')
     playClick()
     playPokeAnim(true)
     setEmotion('angry')
@@ -545,6 +563,10 @@ function onClick(): void {
     window.setTimeout(() => window.syrup.pet.sulk(), 950) // let the line show first
     return
   }
+
+  // A gentle tap warms her up; mashing wears her down (numbers live in main).
+  if (pokeCount <= 2) window.syrup.pet.reportStatus('poke')
+  else if (pokeCount >= 5) window.syrup.pet.reportStatus('pokeStorm')
 
   const reaction = pickPokeReaction(pokeCount, now)
   playClick()
@@ -593,10 +615,13 @@ function wireIpc(): void {
     }
   })
   window.syrup.pet.onCursor((p) => updateGaze(p))
+  window.syrup.status.onChanged((s) => applyStatus(s))
   // Live settings: apply sound on/off + volume the moment they're saved.
   window.syrup.config.onChanged((c) => {
     config = c
     applySfxConfig(c)
+    // Turning the status system off should drop her back to a neutral resting face.
+    if (!c.behaviour.status) statusBaseline = 'normal'
   })
 }
 

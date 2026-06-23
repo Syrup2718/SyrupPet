@@ -14,6 +14,7 @@ export const IPC = {
   petSetInteractive: 'pet:set-interactive',
   petPoke: 'pet:poke', // user poked her — maybe improvise an LLM line
   petSulk: 'pet:sulk', // poked too much — storm off (hide), come back later
+  petStatusEvent: 'pet:status-event', // renderer reports an interaction to nudge status
 
   // --- chat / LLM (renderer -> main, invoke) ---
   chatSend: 'chat:send',
@@ -33,6 +34,10 @@ export const IPC = {
   memoryList: 'memory:list',
   memoryClear: 'memory:clear',
 
+  // --- status system (renderer -> main, invoke) ---
+  statusGet: 'status:get',
+  statusReset: 'status:reset',
+
   // --- windows ---
   windowClose: 'window:close',
 
@@ -40,6 +45,7 @@ export const IPC = {
   petSay: 'pet:say', // PetReply: bubble + expression + action
   petEmotion: 'pet:emotion', // Emotion: switch expression only
   petReset: 'pet:reset', // drop any drag/lift/swing state (e.g. when she hides)
+  statusChanged: 'status:changed', // PetStatus pushed to pet + settings on every change
   cursorMove: 'cursor:move', // { x, y } global cursor for eye-follow
   environmentUpdate: 'environment:update', // EnvironmentSnapshot
   chatReply: 'chat:reply', // { request, reply } pushed to chat window
