@@ -1,9 +1,10 @@
 import { EMOTIONS } from '@shared/types'
-import type { AppConfig, Emotion, PetReply, PetStatus, CursorPoint } from '@shared/types'
+import type { AppConfig, Emotion, PetReply, PetStatus, StatusKey, CursorPoint } from '@shared/types'
 import { configureSfx, playClick, playEmotion } from './sfx'
 
 const characterEl = document.getElementById('character') as HTMLDivElement
 const bubbleEl = document.getElementById('bubble') as HTMLDivElement
+const statusCardEl = document.getElementById('status-card') as HTMLDivElement
 
 const MAX_PUPIL_OFFSET = 4 // px the pupils can drift toward the cursor
 const MAX_TILT_DEG = 7 // single-image: how far the body leans toward the cursor
@@ -139,6 +140,7 @@ let bubbleTimer: number | undefined
 // Her resting face reflects how she's doing (low energy -> sleepy, worried -> sad).
 // Stays 'normal' while the status system is off so nothing changes for opted-out users.
 let statusBaseline: Emotion = 'normal'
+let lastStatus: PetStatus | null = null
 
 /** Map the live status to the expression she idles in when nothing else is going on. */
 function baselineFromStatus(s: PetStatus): Emotion {
@@ -150,7 +152,63 @@ function baselineFromStatus(s: PetStatus): Emotion {
 }
 
 function applyStatus(s: PetStatus): void {
+  lastStatus = s
   statusBaseline = config?.behaviour.status ? baselineFromStatus(s) : 'normal'
+  renderStatusCard(s)
+}
+
+// ----------------------------------------------------- hover status card
+const STATUS_CARD: { key: StatusKey; label: string; color: string }[] = [
+  { key: 'mood', label: '心情', color: '#f0a64b' },
+  { key: 'energy', label: '能量', color: '#5ec27a' },
+  { key: 'affection', label: '親密', color: '#ec6f9e' },
+  { key: 'focus', label: '專注', color: '#5a9bd8' },
+  { key: 'concern', label: '擔心', color: '#b07fd0' }
+]
+const cardFills = new Map<StatusKey, HTMLDivElement>()
+let cardShown = false
+
+/** Build the card's rows once; later we only nudge each fill's width. */
+function buildStatusCard(): void {
+  statusCardEl.innerHTML = ''
+  cardFills.clear()
+  for (const { key, label, color } of STATUS_CARD) {
+    const row = document.createElement('div')
+    row.className = 'sc-row'
+    const name = document.createElement('span')
+    name.className = 'sc-label'
+    name.textContent = label
+    const track = document.createElement('div')
+    track.className = 'sc-track'
+    const fill = document.createElement('div')
+    fill.className = 'sc-fill'
+    fill.style.background = color
+    track.appendChild(fill)
+    row.append(name, track)
+    statusCardEl.appendChild(row)
+    cardFills.set(key, fill)
+  }
+}
+
+function renderStatusCard(s: PetStatus): void {
+  for (const { key } of STATUS_CARD) {
+    const fill = cardFills.get(key)
+    if (fill) fill.style.width = `${Math.round(s[key])}%`
+  }
+}
+
+/** Show the card only while hovering her, status is on, and she's not being dragged. */
+function setCardVisible(show: boolean): void {
+  const want =
+    show &&
+    !!config?.behaviour.status &&
+    !!lastStatus &&
+    !dragging &&
+    !parked &&
+    !characterEl.classList.contains('dragging')
+  if (want === cardShown) return
+  cardShown = want
+  statusCardEl.classList.toggle('hidden', !want)
 }
 
 // ----------------------------------------------------------------- bootstrap
@@ -159,6 +217,7 @@ async function init(): Promise<void> {
   applySfxConfig(config)
   const pack = config.character || 'default'
   renderer = await buildRenderer(pack)
+  buildStatusCard()
   if (config.behaviour.status) applyStatus(await window.syrup.status.get())
   setEmotion('normal')
   wireInteraction()
@@ -423,7 +482,9 @@ function wireInteraction(): void {
   // and the pet would follow the cursor forever ("drifting away").
   document.addEventListener('mousemove', (e) => {
     if (characterEl.classList.contains('dragging')) return
-    window.syrup.pet.setInteractive(isOverCharacter(e.clientX, e.clientY))
+    const over = isOverCharacter(e.clientX, e.clientY)
+    window.syrup.pet.setInteractive(over)
+    setCardVisible(over) // peek at her stats while the cursor rests on her
   })
 
   // Drop the one-shot poke animation when it finishes so breathing resumes.
@@ -440,6 +501,7 @@ function wireInteraction(): void {
     downX = e.clientX
     downY = e.clientY
     dragging = false
+    setCardVisible(false) // tuck the card away while she's grabbed
     // Lock interactive for the whole drag so we always get the mouseup.
     window.syrup.pet.setInteractive(true)
     window.syrup.pet.dragStart()
@@ -501,6 +563,7 @@ function resetInteraction(): void {
   characterEl.classList.remove('dragging', 'lifted', 'swinging')
   renderer.setPose(null)
   busyUntil = 0
+  setCardVisible(false)
   window.syrup.pet.setInteractive(false) // back to click-through; re-enabled on hover
 }
 
@@ -614,14 +677,21 @@ function wireIpc(): void {
       busyUntil = Date.now() + 4000
     }
   })
-  window.syrup.pet.onCursor((p) => updateGaze(p))
+  window.syrup.pet.onCursor((p) => {
+    updateGaze(p)
+    // Global cursor stream keeps the hover card in sync even through click-through.
+    setCardVisible(isOverCharacter(p.x - window.screenX, p.y - window.screenY))
+  })
   window.syrup.status.onChanged((s) => applyStatus(s))
   // Live settings: apply sound on/off + volume the moment they're saved.
   window.syrup.config.onChanged((c) => {
     config = c
     applySfxConfig(c)
     // Turning the status system off should drop her back to a neutral resting face.
-    if (!c.behaviour.status) statusBaseline = 'normal'
+    if (!c.behaviour.status) {
+      statusBaseline = 'normal'
+      setCardVisible(false)
+    }
   })
 }
 

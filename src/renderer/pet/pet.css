@@ -278,3 +278,47 @@ body {
   opacity: 0;
   transform: translateX(-50%) scale(0.8);
 }
+
+/* ----------------------------------------------------- hover status card */
+#status-card {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  width: 168px;
+  background: rgba(255, 253, 247, 0.97);
+  border: 1.5px solid #e8c89a;
+  border-radius: 12px;
+  padding: 9px 11px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+#status-card.hidden {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-10px); /* tuck up out of sight */
+}
+#status-card .sc-row {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  align-items: center;
+  gap: 7px;
+}
+#status-card .sc-label {
+  font-size: 10.5px;
+  color: #6a513a;
+}
+#status-card .sc-track {
+  height: 7px;
+  background: #f1e3cf;
+  border-radius: 5px;
+  overflow: hidden;
+}
+#status-card .sc-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.4s ease;
+}
